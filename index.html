@@ -354,6 +354,7 @@
   .acts li.cur { border-color: rgba(255,138,107,0.6); }
   .acts li.cur .st { color: var(--red-hi); }
   .acts li.done .st { color: #5fd38a; }
+  .fine.pity { color: #5fd38a; }
   .fine { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
   .mode { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 14px; cursor: pointer; }
   .mode b { display: block; font-size: 14px; }
@@ -606,6 +607,7 @@
     <div class="now-chapter"><small>chapter</small><span id="sChapter">—</span></div>
     <h3>checkpoints</h3>
     <ol class="acts" id="sActs"></ol>
+    <p class="fine pity" id="sPity" hidden></p>
     <p class="fine">tap an act to start a run from there. entering an act is a checkpoint: the odds ease off. half of all fatal presses miss.</p>
   </div>
   <div class="pane" id="friendsPane">
@@ -698,6 +700,9 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
   let story = store.get('onemore.story') === '1';
+  // story pity: every run that dies without reaching a new milestone counts; from the 4th, the odds ease
+  let pity = parseInt(store.get('onemore.pity') || '0', 10) || 0;
+  const pityK = () => story && pity >= 4 ? Math.max(0.35, 1 - 0.15 * (pity - 3)) : 1;
   const modeKey = name => story ? `onemore.${name}.story` : `onemore.${name}`;   // story and endless never share progress
   const bestKey = () => modeKey('best');
   let best = parseInt(store.get(bestKey()) || '0', 10) || 0;
@@ -785,7 +790,10 @@
       if (!debugRun && !store.get(key)) store.set(key, count);
       if (!debugRun && act > (parseInt(store.get('onemore.act') || '0', 10) || 0)) store.set('onemore.act', act);
     }
-    if (t > discovered) { discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t); }
+    if (t > discovered) {
+      discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t);
+      if (story && !debugRun && pity) { pity = 0; store.set('onemore.pity', 0); }   // new milestone: pity resets
+    }
     const b = $('banner');
     b.textContent = name;
     // sits in the title's slot (the title is faded out mid-run), clear of the number and button
@@ -1086,9 +1094,9 @@
     publish('press');
 
     // the climb eases off the longer you last, so the deep milestones are rare but reachable
-    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.3 : 1);
+    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.3 * pityK() : 1);
     risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
-    risk = Math.min(story ? 0.012 : MAX_RISK, Math.max(MIN_RISK, risk));   // story never climbs past 1.2%
+    risk = Math.min(story ? 0.012 * pityK() : MAX_RISK, Math.max(MIN_RISK, risk));   // story never climbs past 1.2%
 
     const fatal = Math.random() < risk && !(story && Math.random() < 0.5);   // story: half of all fatal rolls are forgiven
     if (!immortal && fatal) {
@@ -1155,6 +1163,7 @@
     $('newbest').textContent = isBest ? (prevBest > 0 ? `new best · +${count - prevBest}` : 'new best') : '';
     $('near').textContent = nearMiss(prevBest, isBest);
     pushHistory(count);
+    if (story && !debugRun && !runFresh.length) { pity++; store.set('onemore.pity', pity); }
     lastCheckpoint = story ? actOf(runTier) : 0;
     $('againCp').hidden = !lastCheckpoint;
     $('again').textContent = lastCheckpoint ? 'Start over' : 'One more';
@@ -2543,6 +2552,8 @@
     if (cur > furthestAct && !debugRun) { furthestAct = cur; store.set('onemore.act', cur); }
     $('sBest').textContent = best;
     $('sNow').textContent = count;
+    $('sPity').hidden = pity < 4;
+    $('sPity').textContent = `odds easing: ${pity} runs without a new milestone. it resets when you reach one.`;
     $('sChapter').textContent = runTier ? TIERS[runTier - 1].name : (count ? 'the button' : 'not started');
     // only acts you've reached are listed: no hint of what's further
     $('sActs').innerHTML = ACTS.slice(0, Math.max(furthestAct, cur) + 1).map((a, i) => {
@@ -2635,7 +2646,8 @@
   function eraseProgress() {
     ['best', 'tiers', 'drift', 'runs'].forEach(k => { try { localStorage.removeItem(modeKey(k)); } catch {} });
     best = 0; discovered = 0; drift = 0; runs = [];
-    if (story) { furthestAct = 0; try { ['onemore.act', 'onemore.actAt.1', 'onemore.actAt.2', 'onemore.actAt.3', 'onemore.actAt.4'].forEach(k => localStorage.removeItem(k)); } catch {} }
+    if (story) { pity = 0; try { localStorage.removeItem('onemore.pity'); } catch {}
+      furthestAct = 0; try { ['onemore.act', 'onemore.actAt.1', 'onemore.actAt.2', 'onemore.actAt.3', 'onemore.actAt.4'].forEach(k => localStorage.removeItem(k)); } catch {} }
     slideBox.hidden = true; slide.value = 0;
     eraseLabel();
     if (alive) reset(); else { showBest(); updateRing(); }
