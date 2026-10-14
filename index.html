@@ -751,7 +751,7 @@
     'really. nothing.', 'you can stop now.', 'why are you still pressing?', 'i’m running out of things to say.',
     'NAME.', 'please.', 'okay.', 'i’ll just watch.', '…'
   ];
-  // after the opening script it never stops talking: one of these every 15–20 presses
+  // after the opening script it never stops talking: one of these every 30–45 presses
   // (many borrowed from guesser-tui)
   const MORE_LINES = [
     'it noticed the pattern.', 'stop mashing buttons.', 'it’s onto you.', 'it sees through the noise.',
@@ -765,9 +765,18 @@
     'it was never really here.', 'it watched long enough to lose interest.', 'it’s not gone, just done with you.',
     'it doesn’t wait for anyone.', 'it’s already moved on to someone else.', 'one more?', 'back for more?',
     'feeling brave?', 'keep going?', 'try your luck again?', 'it knows you’re not choosing.',
-    'that’s not a choice, that’s a reflex.', 'it’s testing you, and you’re failing.', 'pressing isn’t a personality.'
+    'that’s not a choice, that’s a reflex.', 'it’s testing you, and you’re failing.', 'pressing isn’t a personality.',
+    // about the game itself
+    'the next one could be your last one.', 'it already picked the press that ends this.', 'is it this one?',
+    'every press is a coin you can’t see.', 'the odds stopped being on your side a while ago.',
+    'it knows the number you’ll die at.', 'it’s closer than you think.', 'you won’t feel the last one coming.',
+    'one of these is the one.', 'your best score doesn’t matter here.', 'nobody remembers the number.',
+    'it’s been rigged since you started. a little.', 'the button doesn’t like being pressed.',
+    'it lets you get this far on purpose.', 'stopping is also a choice.', 'it counts too. differently.',
+    'this run is already over. you just haven’t seen it yet.', 'the rhythm won’t save you here.',
+    'it doesn’t want you to beat this.', 'how many more do you think you have?'
   ];
-  let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [];
+  let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [], lastSaid = 0;
   function nextMoreLine() {
     if (!lineBag.length) lineBag = MORE_LINES.slice().sort(() => Math.random() - 0.5);  // no repeats until all are used
     return lineBag.pop();
@@ -788,12 +797,13 @@
     if (k >= BREAKS[8] && k % 7 === 0) { numEl.textContent = 'undefined'; setTimeout(() => { if (alive) numEl.textContent = shownCount(); }, 160); }
     $('stage').querySelector('.well').style.scale = Math.max(0.5, 1 - k * 0.006);   // it backs away
     heartbeat(Math.min(1, 0.3 + k / 80));
-    if (k > 0 && k % 6 === 0 && lineI < LINES.length) {
+    const calm = performance.now() - lastSaid > 8000;   // spam-clicking can't make it talk faster
+    if (lineI < LINES.length && k >= lineI * 10 && calm) {
       say(LINES[lineI++]);
-      if (lineI === LINES.length) nextLineAt = k + 15 + Math.floor(Math.random() * 6);
-    } else if (lineI === LINES.length && k >= nextLineAt) {
+      if (lineI === LINES.length) nextLineAt = k + 30 + Math.floor(Math.random() * 16);
+    } else if (lineI === LINES.length && k >= nextLineAt && calm) {
       say(nextMoreLine());
-      nextLineAt = k + 15 + Math.floor(Math.random() * 6);
+      nextLineAt = k + 30 + Math.floor(Math.random() * 16);
     }
   }
   function say(line) {
@@ -805,6 +815,7 @@
     w.textContent = line;
     w.animate([{ opacity: 0, filter: 'blur(4px)' }, { opacity: 0.9, filter: 'blur(0)' }], { duration: 1200, easing: 'ease-out', fill: 'forwards' });
     document.title = line;
+    lastSaid = performance.now();
   }
 
   function megaShock() {
