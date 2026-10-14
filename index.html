@@ -219,6 +219,59 @@
   :root[data-theme="light"] .gwell { background: #ddd2c3; }
   @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .gwell { background: radial-gradient(circle at 50% 40%, #cbbfaf, #e2d7c8); box-shadow: inset 0 3px 8px rgba(0,0,0,0.25); } }
   canvas#void { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  /* duo: two players, one screen. each half is a complete little game */
+  .duo { position: fixed; inset: 0; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; }
+  .duo[hidden], body.duo .stage { display: none; }
+  .pad { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 16px; cursor: pointer; touch-action: manipulation; transition: background-color 600ms ease; }
+  .pad + .pad { box-shadow: inset 1px 0 0 var(--panel-line); }
+  .pad .count { font-size: clamp(64px, min(13vw, 16vh), 140px); transition: opacity 400ms ease, color 300ms ease; }
+  .pad .well { width: 190px; height: 190px; }
+  .pad .best { margin-top: -10px; }
+  .pad .btn { width: 156px; height: 156px; }
+  .pname { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ptier { position: absolute; top: 22px; left: 0; right: 0; text-align: center; font-size: 12px; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; color: var(--red-hi); opacity: 0; text-shadow: 0 0 18px rgba(255, 90, 60, 0.7); pointer-events: none; }
+  .pkeys { font-size: 12px; color: var(--muted); }
+  .pkeys kbd { font: inherit; font-weight: 700; color: var(--ink); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--panel-line); background: var(--field); }
+  .pout { position: absolute; bottom: 24px; left: 0; right: 0; text-align: center; font-size: 15px; font-weight: 700; opacity: 0; transform: translateY(6px); transition: opacity 300ms ease, transform 300ms var(--ease-out); pointer-events: none; }
+  .pad.out .pout { opacity: 1; transform: none; }
+  .pad.out .count { opacity: 0.4; }
+  .pad.out { cursor: default; }
+  /* the void, scaled to one half: a hole behind the number, the button goes flat black and white */
+  .pad.void { background: radial-gradient(circle at 50% 30%, #000 0 70px, rgba(255,255,255,0.35) 72px, rgba(255,255,255,0.04) 90px, #060606 60%); }
+  .pad.void .count { color: #000; -webkit-text-stroke: 2px #fff; text-shadow: 0 0 2px #fff, 0 0 10px #fff, 0 0 30px rgba(255,255,255,0.7); }
+  .pad.void .btn::before { background: #fff; box-shadow: none; }
+  .pad.void .cap { background: radial-gradient(ellipse 22% 14% at 36% 26%, #fff 98%, transparent 100%), radial-gradient(circle at 50% 50%, #161616, #000 70%); box-shadow: inset 0 0 0 2px #fff; }
+  .pad.void .well { background: #000; box-shadow: 0 0 0 1px rgba(255,255,255,0.5); }
+  .pad.void .ring .fill, .pad.void .ring.past .fill { stroke: #fff; filter: none; }
+  .pad.void .best, .pad.void .pname { color: rgba(255,255,255,0.6); }
+  .pad.white { filter: invert(1); }
+  /* on a phone each player gets their own result, facing them */
+  .presult { display: none; position: absolute; left: 50%; top: 50%; z-index: 3; width: min(300px, calc(100% - 32px)); padding: 20px 24px; translate: -50% -50%; cursor: default; }
+  .presult .final { font-size: 40px; white-space: nowrap; }
+  .presult .again { margin-top: 14px; }
+  body.duo .ghosts { top: auto; bottom: 10px; right: 50%; transform: translateX(50%); flex-direction: row; gap: 10px; }
+  body.duo .ghost { width: 72px; opacity: 0.4; }
+  body.duo .gwell { width: 60px; height: 60px; }
+  body.duo .gbtn { width: 48px; height: 48px; }
+  body.duo .gct { font-size: 16px; }
+  .pane .mode { border-top: 0; padding-top: 0; }
+  @media (hover: none), (max-width: 700px) { .pkeys { display: none; } }
+  @media (orientation: portrait) and (max-width: 900px) {
+    /* phone on a table between two people: player 2's half faces them */
+    .duo { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    .pad.p2 { order: -1; rotate: 180deg; }
+    .pad + .pad { box-shadow: inset 0 1px 0 var(--panel-line); }
+    .pad { gap: 10px; }
+    .pad .count { font-size: clamp(48px, 10vh, 110px); }
+    .pad .well { width: min(170px, 21vh); height: min(170px, 21vh); }
+    .pad .btn { width: min(138px, 17vh); height: min(138px, 17vh); }
+    .ptier { top: 12px; }
+    .pout { bottom: 12px; }
+    body.duo .ghosts { display: none; }
+    #duoOver { display: none; }
+    .duo.done .presult { display: block; transform: none; opacity: 1; animation: presult 400ms var(--ease-out) both 120ms; }
+  }
+  @keyframes presult { from { opacity: 0; transform: translateY(12px) scale(0.96); } }
   .stage { z-index: 1; }
   body { transition: background-color 600ms ease; }
   body.void { background: #000; }
@@ -636,6 +689,10 @@
     <p class="fine">tap an act to start a run from there. entering an act is a checkpoint: the odds ease off. half of all fatal presses miss.</p>
   </div>
   <div class="pane" id="friendsPane">
+  <label class="mode" id="duoRow">
+    <span><b>Duo</b><small id="duoNote">two players, one screen</small></span>
+    <input type="checkbox" id="duoToggle" role="switch">
+  </label>
   <input class="field" id="name" maxlength="16" placeholder="your name" autocomplete="off" spellcheck="false">
   <div id="joinBox" style="display:flex;flex-direction:column;gap:8px">
     <input class="field code" id="code" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false">
@@ -692,6 +749,44 @@
   <div class="hint" id="hint">press it. or tap space.</div>
 </main>
 
+<div class="duo" id="duo" hidden>
+  <section class="pad p1" aria-label="Player 1">
+    <div class="ptier"></div>
+    <div class="pname"></div>
+    <div class="count"><span class="pnum">0</span></div>
+    <div class="best pbest">best 0</div>
+    <div class="well">
+      <svg class="ring" viewBox="0 0 220 220"><circle class="track" cx="110" cy="110" r="104"/><circle class="fill" cx="110" cy="110" r="104"/></svg>
+      <button class="btn" tabindex="-1" aria-label="Press, player 1"><span class="cap"></span></button>
+    </div>
+    <div class="pkeys"><kbd>A</kbd> or <kbd>Space</kbd></div>
+    <div class="pout"></div>
+    <div class="presult card"><div class="label">both out</div><div class="final"></div><div class="meta"></div><button class="again">One more</button></div>
+  </section>
+  <section class="pad p2" aria-label="Player 2">
+    <div class="ptier"></div>
+    <div class="pname"></div>
+    <div class="count"><span class="pnum">0</span></div>
+    <div class="best pbest">best 0</div>
+    <div class="well">
+      <svg class="ring" viewBox="0 0 220 220"><circle class="track" cx="110" cy="110" r="104"/><circle class="fill" cx="110" cy="110" r="104"/></svg>
+      <button class="btn" tabindex="-1" aria-label="Press, player 2"><span class="cap"></span></button>
+    </div>
+    <div class="pkeys"><kbd>L</kbd> or <kbd>Enter</kbd></div>
+    <div class="pout"></div>
+    <div class="presult card"><div class="label">both out</div><div class="final"></div><div class="meta"></div><button class="again">One more</button></div>
+  </section>
+</div>
+<div class="over" id="duoOver" aria-live="polite">
+  <div class="card">
+    <div class="label">both out</div>
+    <div class="final" id="duoWinner"></div>
+    <div class="meta" id="duoMeta"></div>
+    <div class="new" id="duoNew"></div>
+    <div class="again-row"><button class="again" id="duoAgain">One more</button></div>
+  </div>
+</div>
+
 <div class="over" id="over" aria-live="polite">
   <div class="card">
     <div class="label">that was the one</div>
@@ -721,6 +816,14 @@
   const BIG_JUMP = 0.15;     // +15 percentage points
   const BIG_JUMP_CHANCE = 0.02;
   const tinyJump = () => 0.0001 + Math.random() * 0.0009; // +0.01% .. +0.1%
+  // the endless climb as one step. k scales it (versus presets); rng can be seeded (versus fair luck)
+  function stepRisk(r, n, k = 1, rng = Math.random) {
+    const e = Math.max(0.3, 1 / (1 + n / 30));
+    r += rng() < BIG_JUMP_CHANCE * Math.max(0.4, e) ? BIG_JUMP * e * k : (0.0001 + rng() * 0.0009) * e * k;
+    return Math.min(MAX_RISK, Math.max(MIN_RISK, r));
+  }
+  // versus round state (filled in by the round protocol)
+  const vs = { live: false, rid: 0, k: 1, fair: false, seed: 0 };
 
   let risk, count, alive;
 
@@ -744,6 +847,7 @@
     o = o && typeof o === 'object' ? o : {};
     const c = { best: int(o.best), tiers: int(o.tiers, 99), drift: int(o.drift, 1e6),
       runs: (Array.isArray(o.runs) ? o.runs : []).map(v => int(v)).slice(-14) };
+    if (m !== 'story') c.duo = { best: [0, 1].map(i => int(o.duo?.best?.[i])) };
     if (m === 'story') {
       c.act = int(o.act, 9); c.pity = int(o.pity, 1e6); c.actAt = {};
       for (let i = 1; i <= 6; i++) if (int(o.actAt?.[i])) c.actAt[i] = int(o.actAt[i]);
@@ -1472,6 +1576,7 @@
 
   let spaceHeld = false;
   window.addEventListener('keydown', e => {
+    if (duo.on) { duoKey(e); return; }
     if (e.code !== 'Space' || e.target.closest?.('input')) return;
     e.preventDefault();
     if (over.classList.contains('show')) { if (lastCheckpoint) startFrom(lastCheckpoint); else reset(); return; }
@@ -1480,7 +1585,7 @@
     spaceHeld = true;
     unlockAudio(); down(); press();
   });
-  window.addEventListener('keyup', e => { if (e.code === 'Space') { spaceHeld = false; up(); } });
+  window.addEventListener('keyup', e => { if (e.code === 'Space') { spaceHeld = false; up(); } if (duo.on) duoKeyUp(e); });
 
   let lastCheckpoint = 0;
   $('again').addEventListener('click', reset);
@@ -2704,6 +2809,8 @@
     if (alive || count) reset(); else { showBest(); updateRing(); }
     renderStory();
     paintModes();
+    if (story && duo.on) setDuo(false);
+    else if (duo.on) duoReset();
     if (changed && !quiet) toast(story ? 'story mode' : 'endless mode', story ? 'good' : '');
   }
   const setStory = on => setMode(on ? 'story' : 'endless', true);
@@ -2853,12 +2960,17 @@
     checkImport();
   });
 
-  const myState = (ev, extra) => ({ t: 'state', uid, name: nameEl.value.trim() || 'anon', count, best, alive, tier: runTier, h: +heatFor(count).toFixed(2), ev, ...extra });
+  const myName = () => nameEl.value.trim() || 'anon';
+  const myState = (ev, extra) => ({ t: 'state', uid, name: myName(), count, best, alive, tier: runTier, h: +heatFor(count).toFixed(2), rid: vs.rid, dbg: debugRun, ev, ...extra });
 
-  function publish(ev, extra) {
+  function publish(ev, extra, pad) {
     if (story && drawer.classList.contains('open')) renderStory();
     if (!room) return;
-    const msg = myState(ev, extra);
+    if (duo.on && !pad) { duo.pads.forEach(p => send(padState(p, ev, extra))); return; }   // the main game is parked in duo
+    send(pad ? padState(pad, ev, extra) : myState(ev, extra));
+  }
+  function send(msg) {
+    if (!room) return;
     if (isHub) broadcast(msg);
     else if (hubConn && hubConn.open) hubConn.send(msg);
   }
@@ -2933,14 +3045,15 @@
     const c = conns.get(conn.peer);
     if (!c || c.conn !== conn) return;
     conns.delete(conn.peer);
-    if (c.uid) { dropPlayer(c.uid); broadcast({ t: 'leave', uid: c.uid }); }
+    for (const id of c.uids || []) { dropPlayer(id); broadcast({ t: 'leave', uid: id }); }
   }
 
   function onHubData(conn, msg) {
     const c = conns.get(conn.peer);
     if (c) c.last = Date.now();
+    if (msg && msg.t === 'leave') { c?.uids?.delete(msg.uid); dropPlayer(msg.uid); broadcast(msg, conn.peer); return; }
     if (!msg || msg.t !== 'state') return;
-    if (c) c.uid = msg.uid;
+    if (c) (c.uids ||= new Set()).add(msg.uid);
     onState(msg);
     broadcast(msg, conn.peer);
   }
@@ -3175,6 +3288,205 @@
     }
     for (const [id, li] of rows) if (!keep.has(id)) { li.remove(); rows.delete(id); }
   }
+
+  // ---- duo: two players, one screen --------------------------------------------
+  // each half runs its own endless run: own risk, own death, own best. the main stage is parked
+  const duoEl = $('duo'), duoOver = $('duoOver');
+  const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  let canPress = () => true, vsStats = () => null, vsTrack = () => {}, vsSurvived = () => {}, vsDone = () => ({}), vsCheckEnd = () => {};
+  const duo = { on: false, pads: [] };
+  const DUO_KEYS = [['KeyA', 'Space'], ['KeyL', 'Enter', 'NumpadEnter']];
+  const heatOf = (n, b) => { if (b <= 0) return 0; const o = n - b; if (o > 0) return 0.3 + 0.7 * (1 - Math.exp(-o / 12)); return -o <= LEAD_IN ? 0.06 * (LEAD_IN + 1 + o) : 0; };
+  const padName = p => p.i ? myName() + ' 2' : myName();
+  const padState = (p, ev, extra) => ({ t: 'state', uid: p.uid, name: padName(p), count: p.count, best: p.best, alive: p.alive, tier: p.tier, h: +p.heat.toFixed(2), rid: vs.rid, dbg: debugRun, ev, ...extra });
+  function makePad(i) {
+    const el = duoEl.querySelector('.p' + (i + 1));
+    const p = { i, el, uid: i ? uid + '.2' : uid, num: el.querySelector('.pnum'), btn: el.querySelector('.btn'), well: el.querySelector('.well'),
+      ring: el.querySelector('.ring'), fill: el.querySelector('.fill'), bestEl: el.querySelector('.pbest'), tierEl: el.querySelector('.ptier'),
+      nameEl: el.querySelector('.pname'), outEl: el.querySelector('.pout'),
+      count: 0, risk: MIN_RISK, alive: true, tier: 0, cycle: 0, heat: 0, best: 0, pending: null, rng: Math.random, held: false, st: null };
+    p.fill.style.strokeDasharray = CIRC;
+    el.querySelector('.presult .again').addEventListener('click', duoReset);
+    el.addEventListener('pointerdown', e => { if (e.target.closest('.presult')) return; e.preventDefault(); unlockAudio(); p.btn.classList.toggle('down', p.alive); padPress(p); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, () => p.btn.classList.remove('down')));
+    return p;
+  }
+  duo.pads = [makePad(0), makePad(1)];
+  const padOrigin = p => { const r = p.btn.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, rad: r.width / 2 }; };
+  function padPalette(p) {                     // same journey as yours: warm → white-hot → violet/cyan in the void
+    const eh = tierCount(7), sg = tierCount(8), n = p.count;
+    let hue, sat, lit;
+    if (n >= sg || p.cycle) { hue = (190 + (n - sg) * 4) % 360; sat = 100; lit = 70; }
+    else if (n >= eh) { const k = (n - eh) / (sg - eh); hue = 275 - 85 * k; sat = 95; lit = 72 + 8 * k; }
+    else {
+      const k = Math.min(1, Math.max(p.best > 0 ? (n - p.best) / 70 : 0, (n - tierCount(0)) / (eh - tierCount(0))));
+      if (k <= 0) return ['#ff8a6b', '#ffd1a8', '#ff4b3e'];
+      hue = 6 + 46 * Math.min(1, k * 1.3); sat = 100 - 30 * k; lit = 62 + 30 * k * k;
+    }
+    return [-14, 0, 14].map((d, i) => `hsl(${(hue + d + 360) % 360}, ${sat}%, ${Math.min(97, lit + (i - 1) * 8)}%)`);
+  }
+  function padRing(p) {
+    if (p.best <= 0) { p.ring.style.opacity = 0; return; }
+    p.ring.style.opacity = 1;
+    p.fill.style.strokeDashoffset = CIRC * (1 - Math.min(1, p.count / p.best));
+    p.ring.classList.toggle('close', p.best - p.count <= LEAD_IN && p.count <= p.best && p.count > 0);
+    p.ring.classList.toggle('past', p.count > p.best);
+  }
+  function padReset(p) {
+    if (p.pending) { clearTimeout(p.pending.timer); p.pending = null; }
+    Object.assign(p, { count: 0, risk: MIN_RISK, alive: true, tier: 0, cycle: 0, heat: 0, st: vsStats() });
+    p.rng = vs.live && vs.fair ? mulberry(vs.seed) : Math.random;
+    p.best = (S.duo?.best || [0, 0])[p.i];
+    p.num.textContent = '0';
+    p.num.getAnimations().forEach(a => a.cancel());
+    p.el.classList.remove('out', 'void', 'white');
+    p.btn.classList.remove('dead', 'down');
+    p.tierEl.style.opacity = 0;
+    p.outEl.textContent = '';
+    p.nameEl.textContent = (p.i ? 'P2 · ' : 'P1 · ') + padName(p);
+    p.bestEl.textContent = 'best ' + p.best;
+    p.bestEl.classList.remove('beating');
+    padRing(p);
+  }
+  function duoReset() {
+    duoOver.classList.remove('show');
+    duoEl.classList.remove('done');
+    duo.pads.forEach(padReset);
+    publish('reset');
+  }
+  function padPress(p) {
+    if (p.pending) { clearTimeout(p.pending.timer); const { d } = p.pending; p.pending = null; padDie(p, d); return; }
+    if (!p.alive || !canPress()) return;
+    const nowT = performance.now();
+    p.count++;
+    if (!debugRun) countPress();
+    vsTrack(p.st, nowT);
+    p.num.textContent = p.count;
+    const h = p.heat = heatOf(p.count, p.best);
+    if (p.best > 0 && p.count === p.best + 1) {
+      p.bestEl.textContent = 'new best'; p.bestEl.classList.add('beating');
+      p.bestEl.animate([{ transform: 'scale(1.15)' }, { transform: 'none' }], { duration: 300, easing: EASE });
+      chord(0.7);
+    }
+    p.num.animate([{ transform: `translateY(${-5 - h * 12}px) scale(${1.06 + h * 0.25}) rotate(${(Math.random() - 0.5) * h * 14}deg)` }, { transform: 'none' }],
+      { duration: 240 + h * 100, easing: EASE });
+    click(p.count, h);
+    if (p.count % 10 === 0) chord(0.35);
+    const cyc = cycleAt(p.count);
+    if (cyc > p.cycle) { p.cycle = cyc; p.tier = 7; p.el.classList.remove('white'); }
+    const t = tierAt(p.count);
+    if (t > p.tier) padTier(p, t);
+    const crazyP = 1 + p.cycle * 0.45;
+    spawn(Math.round((8 + h * h * 70 + p.tier * 6) * crazyP), 3 + h * 4 + p.tier * 0.4, padPalette(p), 36 + h * 26, 0.06, padOrigin(p));
+    if (p.tier >= 3) shockwave(p.tier, p.well);
+    padRing(p);
+    if (navigator.vibrate) navigator.vibrate(6);
+    publish('press', null, p);
+    p.risk = stepRisk(p.risk, p.count, vs.live ? vs.k : 1, p.rng);
+    if (!immortal && Math.random() < p.risk) {
+      p.alive = false;
+      const d = p.best > 0 && p.count > p.best ? h : Math.min(0.2, p.count / 150);
+      p.pending = { d, timer: setTimeout(() => { p.pending = null; padDie(p, d); }, 240 + d * 760) };
+    } else vsSurvived(p.st, p.risk);
+  }
+  function padTier(p, t) {
+    p.tier = t;
+    p.tierEl.textContent = TIERS[t - 1].name + (p.cycle ? ` ×${p.cycle + 1}` : '');
+    p.tierEl.getAnimations().forEach(a => a.cancel());
+    p.tierEl.animate([{ opacity: 0, transform: 'scale(0.9)', filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)', offset: 0.15 },
+      { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 2200, easing: 'ease-out' });
+    p.el.classList.toggle('void', t >= 8);
+    p.el.classList.toggle('white', t >= 11);
+    chord(0.6);
+    spawn(24 + t * 10, 3 + t * 0.5, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 60, 0.03, padOrigin(p));
+    publish('tier', null, p);
+  }
+  function padDie(p, d) {
+    p.alive = false; p.heat = 0;
+    p.btn.classList.add('dead');
+    p.el.classList.add('out');
+    thud(d * 0.7);
+    const a = 6 + d * 16;
+    p.el.animate([{ transform: `translateX(${-a}px)` }, { transform: `translateX(${a * 0.8}px)` }, { transform: `translateX(${-a * 0.4}px)` }, { transform: 'none' }],
+      { duration: 320 + d * 400, easing: EASE, composite: 'add' });
+    spawn(50 + Math.round(d * 160), 5 + d * 8, ['#5d544c', '#8a7b6b', '#ff4b3e'], 70 + d * 50, 0.18, padOrigin(p));
+    const record = p.count > p.best && !debugRun && !vs.live;
+    if (record) {
+      p.best = p.count;
+      S.duo.best[p.i] = p.count; saveMode();
+    }
+    p.outEl.textContent = `out at ${p.count}` + (record ? ' · new best' : '');
+    publish('die', { record, ...vsDone(p.st, p.count) }, p);
+    if (vs.live) { vsCheckEnd(); return; }
+    if (duo.pads.every(q => !q.alive && !q.pending)) setTimeout(showDuoOver, 700 + d * 600);
+  }
+  function showDuoOver() {
+    if (!duo.on || duo.pads.some(q => q.alive || q.pending)) return;
+    const [a, b] = duo.pads;
+    $('duoWinner').textContent = a.count === b.count ? 'tie' : (a.count > b.count ? 'P1' : 'P2') + ' wins';
+    $('duoMeta').innerHTML = a.count === b.count ? `both out at <b>${a.count}</b>` :
+      `<b>${Math.max(a.count, b.count)}</b> to <b>${Math.min(a.count, b.count)}</b> · by ${Math.abs(a.count - b.count)}`;
+    $('duoNew').textContent = duo.pads.filter(q => q.outEl.textContent.includes('new best')).map(q => `P${q.i + 1} new best`).join(' · ');
+    duoOver.classList.add('show');
+    duoEl.classList.add('done');
+    duo.pads.forEach(q => {                       // the per-player cards (phone layout)
+      const me = q.count, them = duo.pads[1 - q.i].count, r = q.el.querySelector('.presult');
+      r.querySelector('.final').textContent = me === them ? 'tie' : me > them ? 'you win' : 'you lose';
+      r.querySelector('.meta').innerHTML = me === them ? `both out at <b>${me}</b>` : `<b>${me}</b> to <b>${them}</b> · by ${Math.abs(me - them)}` +
+        (q.outEl.textContent.includes('new best') ? '<br>new best' : '');
+    });
+    duo.overAt = performance.now();
+    $('duoAgain').focus({ preventScroll: true });
+  }
+  $('duoAgain').addEventListener('click', duoReset);
+  function duoKey(e) {
+    if (e.target.closest?.('input, textarea, select')) return;
+    const i = DUO_KEYS.findIndex(k => k.includes(e.code));
+    if (i < 0) return;
+    e.preventDefault();
+    if (duoOver.classList.contains('show')) { if (performance.now() - duo.overAt > 500) duoReset(); return; }
+    const p = duo.pads[i];
+    if (p.held) return;                       // no autorepeat, same as solo
+    p.held = true;
+    unlockAudio();
+    p.btn.classList.toggle('down', p.alive);
+    padPress(p);
+  }
+  function duoKeyUp(e) {
+    const i = DUO_KEYS.findIndex(k => k.includes(e.code));
+    if (i < 0) return;
+    duo.pads[i].held = false; duo.pads[i].btn.classList.remove('down');
+  }
+  // heat jitter + glow on each half's number, same feel as solo
+  (function padLoop() {
+    if (duo.on && !reduce) for (const p of duo.pads) {
+      const h = p.alive ? p.heat : 0, amp = h * h * 5 + h;
+      p.num.style.translate = h ? `${(Math.random() - 0.5) * amp}px ${(Math.random() - 0.5) * amp}px` : '';
+      if (!p.el.classList.contains('void')) {
+        p.num.style.color = h ? `color-mix(in oklab, var(--ink), var(--red-hi) ${Math.round(h * 100)}%)` : '';
+        p.num.style.textShadow = h ? `0 0 ${h * 30}px rgba(255, 75, 62, ${h * 0.7})` : '';
+      } else p.num.style.color = p.num.style.textShadow = '';
+    }
+    requestAnimationFrame(padLoop);
+  })();
+  const duoToggle = $('duoToggle');
+  function setDuo(on) {
+    if (on && story) { duoToggle.checked = false; return; }
+    if (on === duo.on) return;
+    if (!on && room) send({ t: 'leave', uid: uid + '.2' });
+    duo.on = on;
+    duoToggle.checked = on;
+    document.body.classList.toggle('duo', on);
+    duoEl.hidden = !on;
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+    over.classList.remove('show');
+    reset();                                    // parks (or restores) the solo run
+    if (on) { drawer.classList.remove('open'); duoReset(); }
+    else { duoOver.classList.remove('show'); duo.pads.forEach(p => { if (p.pending) clearTimeout(p.pending.timer); p.pending = null; }); publish('hello'); }
+    toast(on ? 'duo · P1: A or Space · P2: L or Enter' : 'duo off', on ? 'good' : '');
+  }
+  duoToggle.addEventListener('change', () => setDuo(duoToggle.checked));
+  nameEl.addEventListener('input', () => duo.pads.forEach(p => p.nameEl.textContent = (p.i ? 'P2 · ' : 'P1 · ') + padName(p)));
 
   let toastTimer = 0;
   function toast(text, kind = '') {
