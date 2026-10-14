@@ -1923,6 +1923,7 @@
   }
   function bunkerPress() {
     if (!B) return;
+    if (B.white) { capsuleThock(); return; }      // after launch: quiet
     B.pressT = performance.now();
     clunk(1);
     B.shake = Math.max(B.shake, 1.2);
@@ -1936,6 +1937,7 @@
   function launch() {
     if (!B || B.white) return;
     B.white = performance.now();
+    B.whiteCount = count;
     launchRumble(5);
   }
   function bunkerDie() {
@@ -2071,14 +2073,16 @@
     }
     // launch: everything goes white, then stays white
     if (B.white) {
+      // fade to white (1.6s) → solid white (1.5s) → the afterimage fades in (2s) → it holds for 30 presses
       const k = Math.min(1, (now - B.white) / 1600);
+      const after = Math.max(0, Math.min(1, (now - B.white - 3100) / 2000));
       g.fillStyle = `rgba(255,255,255,${k})`; g.fillRect(-4, -4, W + 8, H + 8);
-      if (k >= 1 && now - B.white > 3400 && !B.toOrbit && alive) { B.toOrbit = true; setTimeout(() => enterOrbit(false), 0); }
-      if (k >= 1) {                         // the afterimage while the white holds
-        stencil(g, 'ПУСК', W / 2, H * 0.3, big * 1.4, 0.12, 5);
-        g.save(); g.font = `${Math.max(8, Math.round(H * 0.06))}px "Courier New", monospace`; g.fillStyle = 'rgba(0,0,0,0.55)';
+      if (after > 0) {
+        stencil(g, 'ПУСК', W / 2, H * 0.3, big * 1.4, 0.12 * after, 5);
+        g.save(); g.font = `${Math.max(8, Math.round(H * 0.06))}px "Courier New", monospace`; g.fillStyle = `rgba(0,0,0,${0.55 * after})`;
         g.textAlign = 'center'; g.fillText(String(count), W / 2, H * 0.5); g.restore();
       }
+      if (after >= 1 && count - B.whiteCount >= 30 && !B.toOrbit && alive) { B.toOrbit = true; setTimeout(() => enterOrbit(false), 0); }
     }
     bkRaf = requestAnimationFrame(drawBunker);
   }

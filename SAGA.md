@@ -68,7 +68,7 @@ Pixel scene drawn at 1/5 resolution. Concrete walls, stencilled red paint (ЕЩ�
 | launch | +100 | Wall reads ПУСК (launch); Nixies count 10 → 0; rumble, shake, whiteout |
 
 Death here: the bulb pops and the room goes black.
-After launch: 3.4s of white with a faint ПУСК afterimage, then Act V.
+After launch: fade to white, solid white, then a faint ПУСК afterimage and the count fade in; presses are quiet; it holds for 30 presses, then Act V.
 
 ## Act V: Orbit ✅ · checkpoint
 
