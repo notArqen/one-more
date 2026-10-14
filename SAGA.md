@@ -15,7 +15,7 @@ The story bible for **story mode**. Endless mode uses Acts I–II only, then loo
 | Where | Side menu → Story mode switch | Default (story switch off) |
 | Multiplayer | Not allowed (locks while in a room) | Yes |
 | Odds | Risk climbs at 40% speed; **half of all fatal presses are forgiven** | Normal |
-| Checkpoints | Entering an act halves the hidden risk; acts become restart points in the Story panel | None |
+| Checkpoints | Entering an act halves the hidden risk; acts become restart points in the Story panel; the game-over card defaults to "one more from checkpoint" (space too) | None |
 | Content | Every act, in order | Acts I–II, then loops event horizon → the other side, wilder each lap |
 | Saves | Own best, tiers, drift, history, furthest act | Own best, tiers, drift, history |
 
@@ -68,19 +68,23 @@ Pixel scene drawn at 1/5 resolution. Concrete walls, stencilled red paint (ЕЩ�
 | launch | +100 | Wall reads ПУСК (launch); Nixies count 10 → 0; rumble, shake, whiteout |
 
 Death here: the bulb pops and the room goes black.
-Current placeholder after launch: white screen, faint ПУСК afterimage, count continues.
+After launch: 3.4s of white with a faint ПУСК afterimage, then Act V.
 
-## Act V: Orbit 🚧
+## Act V: Orbit ✅ · checkpoint
 
 A pixel-art Earth turns below; you're looking out a capsule window with the button on the dash. Zero gravity: particles drift and tumble. All audio is muffled, with slow breathing. The screen edges curve like thick glass.
 
-| Milestone | Idea |
-| --- | --- |
-| low orbit | Arrival out of the launch whiteout |
-| satellite | Radio crackle; Morse beeps spell your past run scores |
-| dark side | Behind the moon: total black except the button, stars and the counter's glow |
+Built as: 3.4s after the launch whiteout, it fades in to a pixel Earth (rotating, clouds, ice caps, blue atmosphere rim) through a rounded capsule window with rivets and a glass glint. The count is a green HUD on the glass. Dash: ВОСТОК label, two gauges whose needles follow the count, РЕКОРД, red button. Presses throw weightless debris that drifts and never falls. All game audio goes through a low-pass "muffle"; helmet breathing (every 4.2s) and the radio bypass it.
 
-## Act VI: The Arcade 📝
+| Milestone | At (from orbit start) | What changes |
+| --- | --- | --- |
+| low orbit | +0 | Arrival out of the launch whiteout |
+| satellite | +40 | Radio crackle; Morse beeps tap out your past run scores every 9s; a satellite crosses the window with a blinking light |
+| dark side | +85 | The moon slides across and swallows the view; everything goes dark except the stars, button and HUD |
+
+Death here: the window glass cracks and the sound sinks to almost nothing.
+
+## Act VI: The Arcade 🚧 next
 
 The camera pulls back out of the window and keeps going. It was all on a CRT inside a dim 1980s arcade cabinet. Clicks become chiptune blips; "INSERT COIN" blinks; the count becomes a pixel-font SCORE; neon from the cabinets around it.
 
