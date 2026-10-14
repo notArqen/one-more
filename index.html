@@ -55,6 +55,7 @@
   .tagline { margin: 6px 0 0; font-size: 13px; color: var(--muted); opacity: 0.6; }
 
   .count {
+    position: relative;
     font-size: clamp(88px, 22vw, 160px);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -232,6 +233,15 @@
   .megashock {
     position: fixed; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%;
     border: 6px solid #fff; box-shadow: 0 0 40px #fff, inset 0 0 40px #fff; pointer-events: none; z-index: 3;
+  }
+  /* post-processing layers */
+  body { perspective: 1100px; }
+  .zoomtrail { position: absolute; inset: 0; text-align: center; pointer-events: none; will-change: transform, opacity; }
+  .grain, .scan { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 3; }
+  .grain { background-size: 160px 160px; mix-blend-mode: overlay; }
+  .scan {
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0 1px, transparent 1px 3px);
+    mix-blend-mode: multiply;
   }
   .best {
     margin-top: -28px;
@@ -420,6 +430,8 @@
 <canvas id="void"></canvas>
 <div class="vignette" id="vignette"></div>
 <div class="invert" id="invert"></div>
+<div class="grain" id="grain"></div>
+<div class="scan" id="scan"></div>
 <svg width="0" height="0" style="position:absolute"><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
 <div class="flash" id="flash"></div>
 <canvas id="fx"></canvas>
@@ -634,6 +646,9 @@
     const t = tierAt(count);
     if (t > runTier) tierUp(t);
     tierPress(runTier, h);
+    pressPulse = 1;
+    if (runTier >= 2) zoomTrail(runTier, h);
+    if (runTier >= 3) hitStopUntil = performance.now() + 30 + runTier * 6;
     const surge = Math.min(1.5, Math.max(0, count - runBest) / 70);
     burst(h, runTier, surge);
     kick(h, surge);
@@ -787,7 +802,66 @@
 
   let heatTarget = 0, heat = 0, frozen = false;
   const vignette = $('vignette'), aura = $('aura');
+  // ---- post-processing: lens, camera, film. each tier changes how the screen is *shot*, not just its colors
+  let pressPulse = 0, hitStopUntil = 0, tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
+  const grainEl = $('grain'), scanEl = $('scan');
+  // a few frames of film grain, generated once
+  const grainFrames = Array.from({ length: 4 }, () => {
+    const c = document.createElement('canvas'); c.width = c.height = 160;
+    const g = c.getContext('2d'), img = g.createImageData(160, 160);
+    for (let i = 0; i < img.data.length; i += 4) { const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+    g.putImageData(img, 0, 0);
+    return `url(${c.toDataURL()})`;
+  });
+  let grainI = 0;
+
+  // radial zoom blur on the number: echoes fly outward from it
+  function zoomTrail(t, h) {
+    if (reduce) return;
+    const n = 3 + Math.min(t, 7);
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.className = 'zoomtrail';
+      el.textContent = numEl.textContent;
+      el.style.color = getComputedStyle(numEl).color;
+      countEl.appendChild(el);
+      el.animate([
+        { transform: 'scale(1)', opacity: 0.32 - i * 0.02, filter: 'blur(0px)' },
+        { transform: `scale(${1.12 + i * (0.06 + h * 0.05)})`, opacity: 0, filter: `blur(${2 + i}px)` }
+      ], { duration: 260 + i * 40, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }).onfinish = () => el.remove();
+    }
+  }
+
+  function postFx() {
+    pressPulse *= 0.86;
+    if (reduce) { stage.style.filter = warping ? 'url(#warp)' : ''; return; }
+    const live = alive && !frozen;
+    const t = live ? runTier : 0, hh = live ? heat : 0, pp = live ? pressPulse : 0;
+    const f = [];
+    // RGB split across the whole stage
+    const split = t >= 3 ? 1 + hh * 3 + pp * 6 : (hh > 0.6 ? pp * 3 : 0);
+    if (split > 0.3) f.push(`drop-shadow(${-split}px 0 rgba(255,0,70,0.55))`, `drop-shadow(${split}px 0 rgba(0,220,255,0.55))`);
+    // lens bloom / contrast
+    if (hh > 0) f.push(`contrast(${1 + hh * 0.25})`, `saturate(${1 + hh * 0.35})`);
+    if (t >= 6) f.push(`drop-shadow(0 0 ${8 + pp * 14}px rgba(255,240,220,0.45))`);
+    if (warping) f.push('url(#warp)');
+    stage.style.filter = f.join(' ');
+    // camera: slow push-in with heat, a punch on every press, and a drifting 3D tilt from "unhinged"
+    const surge = live ? Math.min(1.5, Math.max(0, count - runBest) / 70) : 0;
+    stage.style.scale = 1 + hh * 0.05 + surge * 0.04 + pp * (0.012 + hh * 0.02);
+    if (t >= 4) {
+      if (pp > 0.95) { tiltTX = (Math.random() - 0.5) * (4 + t); tiltTY = (Math.random() - 0.5) * (6 + t); }
+    } else { tiltTX = tiltTY = 0; }
+    tiltX += (tiltTX - tiltX) * 0.06; tiltY += (tiltTY - tiltY) * 0.06;
+    stage.style.rotate = Math.abs(tiltX) + Math.abs(tiltY) > 0.05 ? `${tiltX.toFixed(2)} ${tiltY.toFixed(2)} 0 ${Math.hypot(tiltX, tiltY).toFixed(2)}deg` : '';
+    // film grain + scanlines
+    grainEl.style.opacity = hh * 0.14 + (t >= 5 ? 0.05 : 0);
+    if (hh > 0) { grainI = (grainI + 1) % grainFrames.length; grainEl.style.backgroundImage = grainFrames[grainI]; }
+    scanEl.style.opacity = t >= 5 ? 0.35 + Math.random() * 0.1 : 0;
+  }
+
   function heatLoop() {
+    postFx();
     heat += (heatTarget - heat) * 0.08;
     if (heat < 0.002) heat = 0;
     const h = reduce || frozen ? 0 : heat;
@@ -1087,7 +1161,6 @@
 
   function singularity(on) {
     warping = on && !reduce;
-    stage.style.filter = warping ? 'url(#warp)' : '';
     if (bh) bh.suck = on || !!bh.collapse;
   }
 
@@ -1246,7 +1319,7 @@
     cx.clearRect(0, 0, cv.width, cv.height);
     parts = parts.filter(p => p.life > 0);
     for (const p of parts) {
-      const ts = timeScale;
+      const ts = performance.now() < hitStopUntil ? 0 : timeScale;
       p.vx *= 1 - 0.04 * ts; p.vy = p.vy * (1 - 0.04 * ts) + p.g * ts;
       if (bh && bh.suck) { const c = bh.c; p.vx += (c.x - p.x) * 0.0012 * ts; p.vy += (c.y - p.y) * 0.0012 * ts; }
       p.x += p.vx * ts; p.y += p.vy * ts; p.life -= ts;
@@ -1254,6 +1327,11 @@
       cx.globalAlpha = k;
       cx.fillStyle = p.col;
       cx.beginPath();
+      if (runTier >= 4 && alive) {             // motion-blurred streaks instead of dots
+        cx.strokeStyle = p.col; cx.lineWidth = p.r * dpr * (0.4 + 0.6 * k); cx.lineCap = 'round';
+        cx.moveTo(p.x * dpr, p.y * dpr); cx.lineTo((p.x - p.vx * 4) * dpr, (p.y - p.vy * 4) * dpr); cx.stroke();
+        cx.beginPath();
+      }
       cx.arc(p.x * dpr, p.y * dpr, p.r * dpr * (0.4 + 0.6 * k), 0, Math.PI * 2);
       cx.fill();
     }
