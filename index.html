@@ -421,6 +421,7 @@
     opacity: 0;
     transition: transform 400ms var(--ease-out), opacity 300ms ease;
     max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain;
   }
   .over.show .card { transform: none; opacity: 1; transition-delay: 120ms; }
   .card .label { font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
@@ -428,6 +429,11 @@
   .card .meta { font-size: 14px; color: var(--muted); line-height: 1.6; }
   .card .meta b { color: var(--ink); font-weight: 600; }
   .card .new { color: var(--red-hi); font-weight: 600; font-size: 14px; height: 1.4em; margin-top: 6px; }
+  .again-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .again-row .again { margin-top: 0; }
+  .again-cp { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--panel-line) !important; display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15; padding: 7px 22px !important; }
+  .again-cp[hidden] { display: none; }
+  .again-cp small { font-size: 11px; font-weight: 500; color: var(--muted); }
   .again {
     margin-top: 20px;
     font: inherit;
@@ -656,7 +662,10 @@
     <div class="near" id="near"></div>
     <div class="tiers" id="tiers"></div>
     <div class="history" id="history"></div>
-    <button class="again" id="again">One more</button>
+    <div class="again-row">
+      <button class="again" id="again">One more</button>
+      <button class="again again-cp" id="againCp" hidden>One more<small id="againCpSub">from checkpoint</small></button>
+    </div>
   </div>
 </div>
 
@@ -1126,6 +1135,9 @@
     $('newbest').textContent = isBest ? (prevBest > 0 ? `new best · +${count - prevBest}` : 'new best') : '';
     $('near').textContent = nearMiss(prevBest, isBest);
     pushHistory(count);
+    lastCheckpoint = story ? actOf(runTier) : 0;
+    $('againCp').hidden = !lastCheckpoint;
+    if (lastCheckpoint) $('againCpSub').textContent = `from act ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][lastCheckpoint]} · ${ACTS[lastCheckpoint].name}`;
     renderTiers();
     if (runFresh.length) $('near').textContent = 'unlocked: ' + runFresh.map(n => TIERS[n - 1].name).join(', ');
     publish('die', { odds: fmtPct(risk), record: isBest });
@@ -1354,7 +1366,9 @@
   });
   window.addEventListener('keyup', e => { if (e.code === 'Space') { spaceHeld = false; up(); } });
 
+  let lastCheckpoint = 0;
   $('again').addEventListener('click', reset);
+  $('againCp').addEventListener('click', () => startFrom(lastCheckpoint));
 
   // ---- sound ----------------------------------------------------------------
   let ac = null;
