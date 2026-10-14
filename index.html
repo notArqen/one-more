@@ -343,7 +343,11 @@
   .now-chapter span { display: block; font-size: 15px; font-weight: 600; margin-top: 3px; }
   .drawer h3 { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
-  .acts li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); transition: border-color 300ms ease, opacity 300ms ease; }
+  .acts li { border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); transition: border-color 300ms ease, opacity 300ms ease; }
+  .act-btn { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; cursor: pointer; color: var(--ink); transition: transform 140ms var(--ease-out), background-color 150ms ease; }
+  .act-btn:active { transform: scale(0.98); }
+  .act-btn:focus-visible { outline: 2px solid rgba(255,138,107,0.6); }
+  @media (hover: hover) and (pointer: fine) { .act-btn:hover { background: rgba(255,255,255,0.04); } }
   .acts .num { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; }
   .acts .nm { font-size: 14px; font-weight: 600; }
   .acts .st { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
@@ -589,7 +593,7 @@
     <div class="now-chapter"><small>chapter</small><span id="sChapter">—</span></div>
     <h3>checkpoints</h3>
     <ol class="acts" id="sActs"></ol>
-    <p class="fine">entering an act is a checkpoint: the odds ease off. half of all fatal presses miss.</p>
+    <p class="fine">tap an act to start a run from there. entering an act is a checkpoint: the odds ease off. half of all fatal presses miss.</p>
   </div>
   <div class="pane" id="friendsPane">
   <input class="field" id="name" maxlength="16" placeholder="your name" autocomplete="off" spellcheck="false">
@@ -750,7 +754,11 @@
   function tierUp(t) {
     runTier = t;
     const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
-    if (story && ACT_STARTS.includes(t)) { risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900); }
+    if (story && ACT_STARTS.includes(t)) {
+      risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900);
+      const key = 'onemore.actAt.' + (ACT_STARTS.indexOf(t) + 1);
+      if (!debugRun && !store.get(key)) store.set(key, count);
+    }
     if (t > discovered) { discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t); }
     const b = $('banner');
     b.textContent = name;
@@ -2196,10 +2204,32 @@
     $('sActs').innerHTML = ACTS.slice(0, Math.max(furthestAct, cur) + 1).map((a, i) => {
       const state = !alive && count ? (i <= cur ? 'done' : '') : i < cur ? 'done' : i === cur ? 'cur' : '';
       const label = state === 'cur' ? 'now' : state === 'done' ? (i === 0 ? 'start' : 'checkpoint') : 'reached before';
-      return `<li class="${state}"><span class="num">${ROMAN[i]}</span><span class="nm">${a.name}</span><span class="st">${label}</span></li>`;
+      return `<li class="${state}"><button class="act-btn" data-act="${i}" aria-label="Start from act ${ROMAN[i]}: ${a.name}"><span class="num">${ROMAN[i]}</span><span class="nm">${a.name}</span><span class="st">${label}</span></button></li>`;
     }).join('');
   }
   window.__renderStory = renderStory;
+
+  // start a fresh run from a checkpoint
+  $('sActs').addEventListener('click', e => {
+    const b = e.target.closest('.act-btn');
+    if (!b || transit) return;
+    startFrom(+b.dataset.act);
+    drawer.classList.remove('open');
+  });
+  function startFrom(i) {
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+    reset();
+    if (i === 0) { renderStory(); return; }
+    unlockAudio();
+    const saved = parseInt(store.get('onemore.actAt.' + i) || '0', 10);
+    const start = [0, tierCount(7), tierCount(12), saved || tierCount(12) + 120][i];
+    $('title').classList.add('gone'); hint.style.opacity = 0;
+    if (i === 3) { count = start; runTier = 13; enterBunker(); count = start - 1; }
+    else count = start - 1;
+    press();                                     // lands on the act's first beat
+    toast(`act ${ROMAN[i]}: ${ACTS[i].name}`, 'good');
+    renderStory();
+  }
 
   const storyToggle = $('storyToggle');
   storyToggle.checked = story;
