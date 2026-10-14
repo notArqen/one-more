@@ -19,7 +19,7 @@
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; margin: 0; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
   body {
     background: radial-gradient(120% 80% at 50% 40%, var(--bg-glow), var(--bg) 70%);
     background-color: var(--bg);
@@ -334,6 +334,15 @@
     font-size: 17px; font-weight: 500; color: var(--ink); white-space: nowrap; opacity: 0; pointer-events: none;
     max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
   }
+  .mode { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 14px; cursor: pointer; }
+  .mode b { display: block; font-size: 14px; }
+  .mode small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .mode input { -webkit-appearance: none; appearance: none; width: 42px; height: 24px; border-radius: 999px; background: var(--field); border: 1px solid var(--panel-line); position: relative; cursor: pointer; flex: none; transition: background-color 200ms ease; }
+  .mode input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform 220ms var(--ease-out), background-color 200ms ease; }
+  .mode input:checked { background: var(--red); border-color: var(--red); }
+  .mode input:checked::after { transform: translateX(18px); background: #fff; }
+  .mode input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .mode.locked { cursor: not-allowed; }
   .erase { border-top: 1px solid var(--panel-line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
   .erase .pill { flex: none; }
   .slide { position: relative; height: 44px; border-radius: 12px; background: var(--field); border: 1px solid rgba(255,75,62,0.35); overflow: hidden; }
@@ -342,6 +351,16 @@
   .slide input { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; cursor: grab; }
   .slide input::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 42px; border-radius: 10px; background: var(--red); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
   .slide input::-moz-range-thumb { width: 44px; height: 42px; border: 0; border-radius: 10px; background: var(--red); }
+  canvas#bunker { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; image-rendering: pixelated; image-rendering: crisp-edges; display: none; }
+  body.bunker { background: #000 !important; }
+  body.bunker canvas#bunker { display: block; }
+  body.bunker .count span, body.bunker .well > *:not(.btn), body.bunker .cap, body.bunker .btn::before,
+  body.bunker header, body.bunker .best, body.bunker .hint, body.bunker .whisper, body.bunker .vignette { opacity: 0 !important; }
+  body.bunker .well { background: none; box-shadow: none; }
+  body.bunker .btn, body.bunker .btn::before { transition: none; }
+  body.bunker .banner { font-family: "Courier New", monospace; color: #e8c08a; text-shadow: 0 0 8px rgba(255,160,60,0.6); letter-spacing: 0.4em; }
+  .crt { position: fixed; inset: 0; z-index: 9; background: #000; pointer-events: none; display: none; }
+  .crt i { position: absolute; inset: 0; background: #fff; }
   .drain { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
   .best {
     margin-top: -28px;
@@ -443,6 +462,7 @@
     gap: 14px;
   }
   .drawer.open { transform: none; }
+  .drawer:not(.open) { box-shadow: none; }
   .tab {
     position: absolute; top: 50%; left: 100%;
     transform: translateY(-50%);
@@ -535,6 +555,8 @@
 <div class="leak" id="leak"></div>
 <div class="vhs" id="vhs"></div>
 <div class="drain" id="drain"></div>
+<canvas id="bunker"></canvas>
+<div class="crt" id="crt"><i></i></div>
 <svg width="0" height="0" style="position:absolute"><filter id="haze"><feTurbulence id="hazeTurb" type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" id="hazeMap" scale="0"/></filter><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
 <div class="flash" id="flash"></div>
 <canvas id="fx"></canvas>
@@ -553,6 +575,10 @@
   <button class="pill quiet" id="leave" style="display:none;flex:none">Leave room</button>
   <div class="status" id="status">same code, same room. peer to peer.</div>
   <ul class="players" id="players"></ul>
+  <label class="mode" id="modeRow">
+    <span><b>Story mode</b><small id="modeNote">checkpoints · solo only</small></span>
+    <input type="checkbox" id="storyToggle" role="switch">
+  </label>
   <div class="erase">
     <button class="pill quiet" id="eraseBtn">Erase progress</button>
     <div class="slide" id="slideBox" hidden>
@@ -622,7 +648,9 @@
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
-  let best = parseInt(store.get('onemore.best') || '0', 10) || 0;
+  let story = store.get('onemore.story') === '1';
+  const bestKey = () => story ? 'onemore.best.story' : 'onemore.best';
+  let best = parseInt(store.get(bestKey()) || '0', 10) || 0;
 
   const bestLive = $('bestLive');
   function showBest() {
@@ -645,23 +673,54 @@
     { at: 185, name: 'heat death' },
     { at: 205, name: 'the other side' },
     { at: 228, name: 'rewind' },
-    { at: 255, name: 'it notices you' }
+    { at: 255, name: 'it notices you' },
+    // act iv — entered by event (after the colour drains), offsets are from the bunker's first press
+    { at: null, off: 0,   name: 'the bunker' },
+    { at: null, off: 30,  name: 'radiation' },
+    { at: null, off: 65,  name: 'alarm' },
+    { at: null, off: 100, name: 'launch' }
   ];
+  const CLASSIC_MAX = 11;      // classic stops at "the other side" and loops event horizon → the other side
+  const ACT_STARTS = [8, 13, 14];   // story checkpoints: entering each act halves the hidden risk
   // milestones are fixed counts (a lucky first run can still see the black hole), but every new
   // record nudges all of them a few presses further out
   let drift = parseInt(store.get('onemore.drift') || '0', 10) || 0;
   const tierCount = i => TIERS[i].at + drift;
   let runTier = 0, runBest = 0, runFresh = [];
   let discovered = parseInt(store.get('onemore.tiers') || '0', 10) || 0;
+  let runCycle = 0, bunkerStart = 0;
+  const loopLen = () => tierCount(10) - tierCount(7) + 20;          // one lap of the void, plus a breath on the other side
   const tierAt = n => {
+    if (bunkerStart) {                                                 // act iv
+      let t = 14;
+      for (let i = 14; i < TIERS.length; i++) if (n - bunkerStart >= TIERS[i].off) t = i + 1;
+      return t;
+    }
+    const max = story ? 13 : CLASSIC_MAX;
     let t = 0;
-    for (let i = 0; i < TIERS.length; i++) if (n >= tierCount(i)) t = i + 1;
+    for (let i = 0; i < max; i++) if (n >= tierCount(i)) t = i + 1;
+    if (!story && n >= tierCount(7)) {                                 // classic: lap the void forever
+      const into = (n - tierCount(7)) % loopLen();
+      t = 8;
+      for (let i = 8; i <= 10; i++) if (into >= tierCount(i) - tierCount(7)) t = i + 1;
+    }
     return t;
   };
+  const cycleAt = n => !story && n >= tierCount(7) ? Math.floor((n - tierCount(7)) / loopLen()) : 0;
+  const crazy = () => 1 + runCycle * 0.45;                             // each lap of the void gets wilder
 
+  // classic: back round to the event horizon, harder
+  function newLap(c) {
+    runCycle = c;
+    runTier = 7;
+    document.body.classList.remove('white');
+    closeVoid(false);
+    singularity(false);
+  }
   function tierUp(t) {
     runTier = t;
-    const name = TIERS[t - 1].name;
+    const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
+    if (story && ACT_STARTS.includes(t)) { risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900); }
     if (t > discovered) { discovered = t; if (!debugRun) store.set('onemore.tiers', t); runFresh.push(t); }
     const b = $('banner');
     b.textContent = name;
@@ -675,13 +734,14 @@
       { opacity: 0, transform: 'translateX(-50%) translateY(-6px) scale(1.02)' }
     ], { duration: 1800, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
     tierSound(t);
-    spawn(40 + t * 25, 5 + t, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 70, 0.03);
-    if (t >= 4) startDrone();
+    if (t < 13) spawn(Math.round((40 + t * 25) * crazy()), 5 + t, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 70, 0.03);
+    if (t >= 4 && t < 13) startDrone();
     if (t >= 8 && t < 13) openVoid();
     if (t >= 9 && t < 13) singularity(true);
     if (t === 11) enterWhite();
     if (t === 12) enterRewind();
     if (t === 13) enterNotice();
+    if (t >= 14) bunkerTier(t);
     publish('tier');
   }
 
@@ -699,6 +759,7 @@
       heartbeat(0.35 + k * 0.65);
       if (!reduce) stage.animate([{ scale: `${1.015 + k * 0.03}` }, { scale: '1' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', composite: 'add' });
     }
+    if (t >= 14) { bunkerPress(); return; }
     if (t >= 13) { noticePress(); if (!echoTier) return; t = echoTier; }   // quiet, until it isn't
     if (t === 12) implode();
     if (t >= 2 && !rapid) subKick();
@@ -783,7 +844,7 @@
     'it doesn’t want you to beat this.', 'how many more do you think you have?'
   ];
   let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [], lastSaid = 0, echoTier = 0, watchAt = -1, drainAt = -1;
-  const fxT = () => runTier >= 13 ? echoTier : runTier;   // which tier's effects are showing
+  const fxT = () => runTier >= 14 ? 0 : runTier >= 13 ? echoTier : runTier;   // which tier's effects are showing
   function nextMoreLine() {
     if (!lineBag.length) lineBag = MORE_LINES.slice().sort(() => Math.random() - 0.5);  // no repeats until all are used
     return lineBag.pop();
@@ -811,6 +872,7 @@
     }
     if (drainAt >= 0) {                     // then the colour slowly drains to black and white
       const g = Math.min(1, (k - drainAt) / 100);
+      if (g >= 1 && story && !transit && !bunkerStart) setTimeout(signalLost, 0);
       $('drain').style.backdropFilter = $('drain').style.webkitBackdropFilter = `grayscale(${g.toFixed(3)}) contrast(${(1 + g * 0.35).toFixed(3)})`;
     }
     if (lineI < LINES.length && k >= lineI * 10 && calm) {
@@ -862,7 +924,8 @@
     numEl.textContent = '0';
     heatTarget = 0;
     frozen = false;
-    runTier = 0; runBest = best; runFresh = [];
+    runTier = 0; runBest = best; runFresh = []; runCycle = 0;
+    if (bunkerStart) exitBunker();
     debugRun = immortal || incognito;
     document.title = incognito ? 'One More (incognito)' : immortal ? 'One More (debug)' : 'One More';
     stopDrone();
@@ -888,7 +951,9 @@
   }
 
   let pendingDeath = null, immortal = false, incognito = false, debugRun = false, lastPress = 0, rapid = false;
+  let transit = false;
   function press() {
+    if (transit) return;
     if (pendingDeath) { clearTimeout(pendingDeath.timer); const { d } = pendingDeath; pendingDeath = null; die(d); return; }
     if (!alive) return;
     const nowT = performance.now();
@@ -896,7 +961,7 @@
     lastPress = nowT;
     count++;
     numEl.textContent = shownCount();
-    heatTarget = runTier >= 13 ? echoTier * 0.13 : heatFor(count);
+    heatTarget = runTier >= 14 ? 0 : runTier >= 13 ? echoTier * 0.13 : heatFor(count);
     const h = heatTarget;
     if (best > 0 && count > best) {
       bestLive.textContent = 'new best';
@@ -907,7 +972,10 @@
     }
     bump(h);
     click(count, h);
-    if (count % 10 === 0 && runTier < 13) chord(0.5);      // every ten gets a little chime
+    if (count % 10 === 0 && runTier < 13) chord(0.5);
+    if (count % 10 === 0 && runTier === 16) klaxon();      // every ten gets a little chime
+    const cyc = cycleAt(count);
+    if (cyc > runCycle) newLap(cyc);
     const t = tierAt(count);
     if (t > runTier) tierUp(t);
     tierPress(runTier, h);
@@ -923,11 +991,12 @@
     publish('press');
 
     // the climb eases off the longer you last, so the deep milestones are rare but reachable
-    const ease = Math.max(0.3, 1 / (1 + count / 30));
+    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.4 : 1);
     risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
     risk = Math.min(MAX_RISK, Math.max(MIN_RISK, risk));
 
-    if (!immortal && Math.random() < risk) {
+    const fatal = Math.random() < risk && !(story && Math.random() < 0.5);   // story: half of all fatal rolls are forgiven
+    if (!immortal && fatal) {
       // the press lands like any other, then a beat of silence before it all goes
       // a press during the pause cuts it short
       alive = false;
@@ -964,7 +1033,8 @@
     thud(d);
     heatTarget = 0;
     stopDrone();
-    if (runTier >= 13) say('finally.');
+    if (runTier >= 13 && runTier < 14) say('finally.');
+    if (bunkerStart) bunkerDie();
     document.body.classList.remove('rewind');
     if (bh) collapseVoid();
     singularity(false);
@@ -978,7 +1048,7 @@
     const prevBest = best;
     const isBest = count > best;
     if (isBest && !debugRun) {
-      best = count; store.set('onemore.best', best);
+      best = count; store.set(bestKey(), best);
       drift += 3 + Math.floor(Math.random() * 5);   // 3–7 further out next time
       store.set('onemore.drift', drift);
     }
@@ -1116,7 +1186,7 @@
     // effects come back harder afterwards. before it, everything stays a notch below it.
     const inVoid = t === 8, post = t >= 9;
     // RGB split: a flicker on presses before the hole, a full tear after it
-    const split = post ? 2 + hh * 4 + pp * 8 : inVoid ? 0 : t >= 3 ? pp * 2.5 + hh * 0.8 : 0;
+    const split = post ? (2 + hh * 4 + pp * 8) * crazy() : inVoid ? 0 : t >= 3 ? pp * 2.5 + hh * 0.8 : 0;
     if (split > 0.3) f.push(`drop-shadow(${-split}px 0 rgba(255,0,70,0.55))`, `drop-shadow(${split}px 0 rgba(0,220,255,0.55))`);
     // lens bloom / contrast
     if (hh > 0 && !inVoid) f.push(`contrast(${1 + hh * (post ? 0.35 : 0.18)})`, `saturate(${1 + hh * 0.3})`);
@@ -1172,6 +1242,7 @@
       const o = 2 + Math.random() * 5 * heat;
       numEl.style.textShadow = `${-o}px 0 rgba(255,0,70,0.85), ${o}px 0 rgba(0,220,255,0.85), 0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})`;
     } else numEl.style.textShadow = heat ? `0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})` : '';
+    if (warping) $('warp').querySelector('feDisplacementMap').setAttribute('scale', (14 * crazy()).toFixed(0));
     if (warping) turb.setAttribute('baseFrequency', (0.01 + Math.sin(performance.now() / 400) * 0.004).toFixed(4));
     vignette.style.opacity = heat * 0.9;
     aura.style.opacity = heat * (0.75 + Math.sin(performance.now() / (260 - heat * 140)) * 0.25);
@@ -1186,7 +1257,7 @@
   // whole stage jolts on each press once it's hot
   function kick(h, surge = 0) {
     if (!h || reduce) return;
-    const m = h * h * 10 + surge * 14;
+    const m = (h * h * 10 + surge * 14) * crazy();
     stage.animate(
       [{ transform: `translate(${(Math.random() - 0.5) * m}px, ${(Math.random() - 0.5) * m}px)` }, { transform: 'none' }],
       { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }
@@ -1226,7 +1297,7 @@
   // major pentatonic climbing; wraps up an octave so long runs stay musical
   const SCALE = [0, 2, 4, 7, 9];
   function click(n, h = 0) {
-    if (!ac || (runTier >= 13 && !echoTier)) return;
+    if (!ac || (runTier >= 13 && !echoTier) || runTier >= 14) return;
     if (runTier === 12) { reverseClick(n); return; }
     const t = ac.currentTime;
     const step = (n - 1) % 15;
@@ -1276,6 +1347,7 @@
   ];
   function tierSound(t) {
     if (!ac) return;
+    if (t >= 14) return;                       // act iv brings its own
     if (t === 13) { heartbeat(0.5); return; }
     const now = ac.currentTime, root = 220 * Math.pow(2, (t * 2) / 12);
     // riser
@@ -1510,7 +1582,7 @@
     vx.globalAlpha = fade;
     vx.fillStyle = '#000'; vx.fillRect(0, 0, innerWidth, innerHeight);
 
-    const sing = warping ? 2.2 : 1;
+    const sing = (warping ? 2.2 : 1) * crazy();
     // stars spiral in and stretch near the edge
     vx.fillStyle = '#fff';
     for (const st of bh.stars) {
@@ -1596,6 +1668,354 @@
     r.oscs.forEach(o => o.stop(t + 1.3));
   }
 
+  // ---- act iii ending: signal lost ------------------------------------------
+  function signalLost() {
+    if (transit || !alive) return;
+    transit = true;
+    const crt = $('crt'), line = crt.firstElementChild;
+    crt.style.display = 'block';
+    stopDrone(); stopRumble();
+    if (ac) noiseBurst(0.25, 9000, 300, 'lowpass', 0.25);      // the tube switching off
+    const a = line.animate([
+      { transform: 'scale(1, 1)', opacity: 1 },
+      { transform: 'scale(1, 0.004)', opacity: 1, offset: 0.45 },
+      { transform: 'scale(0.002, 0.004)', opacity: 1, offset: 0.85 },
+      { transform: 'scale(0, 0)', opacity: 0 }
+    ], { duration: 900, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', fill: 'forwards' });
+    a.onfinish = () => setTimeout(() => {          // three seconds of nothing
+      if (!alive) { crt.style.display = 'none'; transit = false; return; }
+      clunk(1.4);
+      enterBunker();
+      crt.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, delay: 60, fill: 'forwards' }).onfinish = () => { crt.style.display = 'none'; crt.getAnimations().forEach(x => x.cancel()); line.getAnimations().forEach(x => x.cancel()); };
+      transit = false;
+    }, 3000);
+  }
+
+  // ---- act iv: the bunker ------------------------------------------------------
+  // drawn at 1/5 resolution and scaled up with hard pixels. the dom button stays on top, invisible,
+  // so input is unchanged; the canvas draws the panel, button and nixie counter where they really are
+  const bkCv = $('bunker'), bk = bkCv.getContext('2d');
+  const PX = 5;
+  let B = null, bkRaf = 0;
+
+  function seeded(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+
+  function buildWall(W, H) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), rnd = seeded(1945);
+    const img = g.createImageData(W, H), d = img.data;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const floor = y > H * 0.82;
+      let v = (floor ? 44 : 76) + (rnd() - 0.5) * 22 - (y / H) * 14;
+      if (!floor && (x % 48 === 0 || y % 34 === 0)) v -= 18;          // panel seams
+      d[i] = v; d[i + 1] = v - 1; d[i + 2] = v - 5; d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    for (let k = 0; k < 26; k++) {                                     // water stains, top down
+      const x = rnd() * W, len = H * (0.15 + rnd() * 0.5);
+      const grd = g.createLinearGradient(0, 0, 0, len);
+      grd.addColorStop(0, 'rgba(20,18,14,0.35)'); grd.addColorStop(1, 'rgba(20,18,14,0)');
+      g.fillStyle = grd; g.fillRect(x, 0, 1 + (rnd() * 3 | 0), len);
+    }
+    for (let k = 0; k < 12; k++) {                                     // grime blotches
+      g.fillStyle = `rgba(15,13,10,${0.12 + rnd() * 0.18})`;
+      g.beginPath(); g.ellipse(rnd() * W, rnd() * H * 0.8, 6 + rnd() * 20, 3 + rnd() * 10, 0, 0, Math.PI * 2); g.fill();
+    }
+    g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(0, Math.floor(H * 0.82), W, 1);   // floor line
+    return c;
+  }
+
+  // red stencil paint, worn
+  function stencil(g, text, x, y, size, alpha = 0.9, seed = 7) {
+    g.save();
+    g.font = `900 ${size}px "Arial Black", Impact, "Helvetica Neue", sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = `rgba(168,28,18,${alpha})`;
+    let w = g.measureText(text).width;
+    if (w > g.canvas.width - 6) { size = Math.floor(size * (g.canvas.width - 6) / w); g.font = `900 ${size}px "Arial Black", Impact, "Helvetica Neue", sans-serif`; w = g.measureText(text).width; }
+    x = Math.min(g.canvas.width - w / 2 - 3, Math.max(w / 2 + 3, x));      // never paint off the wall
+    g.fillText(text, x, y);
+    const rnd = seeded(seed);
+    g.globalCompositeOperation = 'destination-out';
+    for (let k = 0; k < w * size / 14; k++) g.fillRect(x - w / 2 + rnd() * w, y - size / 2 + rnd() * size, 1, 1);
+    g.restore();
+  }
+
+  function enterBunker() {
+    // leave everything from act iii behind
+    closeVoid(false); singularity(false); stopDrone(); stopRumble();
+    document.body.classList.remove('white', 'rewind', 'notice', 'returning', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9');
+    $('drain').style.backdropFilter = $('drain').style.webkitBackdropFilter = '';
+    $('whisper').textContent = ''; document.title = 'One More';
+    document.querySelector('.well').style.scale = '';
+    echoTier = 0; watchAt = -1; drainAt = -1;
+    bunkerStart = count;
+    document.body.classList.add('bunker');
+    const W = Math.ceil(innerWidth / PX), H = Math.ceil(innerHeight / PX);
+    bkCv.width = W; bkCv.height = H;
+    B = {
+      W, H, wall: buildWall(W, H), t0: performance.now(), shake: 0, pressT: 0, dead: 0, launchAt: 0, white: 0,
+      dust: Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * H * 0.8, vx: (Math.random() - 0.5) * 0.04, vy: (Math.random() - 0.5) * 0.03 }))
+    };
+    hum(true);
+    clearInterval(B.drip); B.drip = setInterval(drip, 3100);       // fixed beat, not random
+    if (!bkRaf) bkRaf = requestAnimationFrame(drawBunker);
+  }
+  // resizing rebuilds the low-res canvas and its wall at the new size
+  addEventListener('resize', () => {
+    scrollTo(0, 0);
+    if (!B) return;
+    B.W = bkCv.width = Math.ceil(innerWidth / PX);
+    B.H = bkCv.height = Math.ceil(innerHeight / PX);
+    B.wall = buildWall(B.W, B.H);
+    B.dust.forEach(p => { p.x = Math.random() * B.W; p.y = Math.random() * B.H * 0.8; });
+  });
+  function exitBunker() {
+    bunkerStart = 0;
+    if (B) clearInterval(B.drip);
+    B = null;
+    hum(false);
+    document.body.classList.remove('bunker');
+    bk.clearRect(0, 0, bkCv.width, bkCv.height);
+  }
+  function bunkerTier(t) {
+    if (t === 15) geiger(6);
+    if (t === 16) klaxon();
+    if (t === 17 && B) { B.launchAt = count; klaxon(); }
+  }
+  function bunkerPress() {
+    if (!B) return;
+    B.pressT = performance.now();
+    clunk(1);
+    B.shake = Math.max(B.shake, 1.2);
+    if (runTier >= 15) geiger(1 + Math.min(8, Math.floor((count - bunkerStart - 30) / 8)));
+    if (runTier >= 17) {                         // countdown to launch
+      const left = 10 - (count - B.launchAt);
+      if (left === 0) launch();
+      B.shake = Math.max(B.shake, 1.5 + (10 - left) * 0.4);
+    }
+  }
+  function launch() {
+    if (!B || B.white) return;
+    B.white = performance.now();
+    launchRumble(5);
+  }
+  function bunkerDie() {
+    if (!B) return;
+    B.dead = performance.now();
+    if (ac) { noiseBurst(0.12, 8000, 2000, 'highpass', 0.4); setTimeout(() => hum(false), 120); }   // the bulb pops
+  }
+
+  function nixie(g, text, cx, cy, h) {
+    const w = h * 0.62, gap = Math.max(1, h * 0.08);
+    const total = text.length * w + (text.length - 1) * gap;
+    let x = cx - total / 2;
+    for (const ch of text) {
+      g.fillStyle = '#120d09'; g.fillRect(Math.round(x), Math.round(cy - h / 2), Math.round(w), Math.round(h));
+      g.fillStyle = 'rgba(255,255,255,0.06)'; g.fillRect(Math.round(x), Math.round(cy - h / 2), Math.round(w), 1);
+      g.save();
+      g.font = `${Math.round(h * 0.8)}px "Courier New", monospace`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.shadowColor = '#ff7a1a'; g.shadowBlur = h * 0.5;
+      g.fillStyle = '#ffa04a';
+      g.fillText(ch, x + w / 2, cy + 1);
+      g.restore();
+      x += w + gap;
+    }
+  }
+
+  function drawBunker(now) {
+    bkRaf = 0;
+    if (!B) return;
+    const { W, H } = B, g = bk, t = (now - B.t0) / 1000;
+    const br = btn.getBoundingClientRect(), nr = numEl.getBoundingClientRect();
+    const bx = (br.left + br.width / 2) / PX, by = (br.top + br.height / 2) / PX, brad = br.width / 2 / PX;
+    const nx = (nr.left + nr.width / 2) / PX, ny = (nr.top + nr.height / 2) / PX;
+    B.shake *= 0.9;
+    const sx = (Math.random() - 0.5) * B.shake, sy = (Math.random() - 0.5) * B.shake;
+    g.setTransform(1, 0, 0, 1, Math.round(sx), Math.round(sy));
+    g.imageSmoothingEnabled = false;
+    g.drawImage(B.wall, 0, 0);
+
+    // wall text: changes with the act's milestones
+    const big = Math.max(8, Math.round(H * 0.075));
+    stencil(g, runTier >= 17 ? 'ПУСК' : 'ЕЩЁ ОДИН', W * 0.26, H * 0.16, big, 0.85, 11);
+    if (runTier >= 16) stencil(g, 'ТРЕВОГА', W * 0.74, H * 0.62, big, 0.95, 31);   // painted on: it stays, only the beacon light moves
+
+    // bulb on a wire, swinging
+    const ang = Math.sin(t * 1.15) * 0.32, L = H * 0.2;
+    const lx = W / 2 + Math.sin(ang) * L, ly = Math.cos(ang) * L;
+    const lit = B.dead ? 0 : 1;
+
+    // panel + its shadow, thrown away from the bulb
+    const pw = Math.min(brad * 4.4, W - 4), ph = brad * 2.7, px0 = bx - pw / 2, py0 = by - ph / 2 + brad * 0.35;
+    const small = Math.max(6, Math.round(H * 0.04));
+    stencil(g, 'НЕ НАЖИМАТЬ', bx, py0 - small * 0.9, small, 0.9, 23);
+    g.fillStyle = 'rgba(0,0,0,0.45)';
+    g.fillRect(Math.round(px0 + (bx - lx) * 0.12), Math.round(py0 + 4), Math.round(pw), Math.round(ph));
+    g.fillStyle = '#3a3f44'; g.fillRect(Math.round(px0), Math.round(py0), Math.round(pw), Math.round(ph));
+    g.fillStyle = '#4b5258'; g.fillRect(Math.round(px0), Math.round(py0), Math.round(pw), 1);
+    g.fillStyle = '#23272b'; g.fillRect(Math.round(px0), Math.round(py0 + ph - 1), Math.round(pw), 1);
+    for (const [rx, ry] of [[2, 2], [pw - 3, 2], [2, ph - 3], [pw - 3, ph - 3]]) { g.fillStyle = '#8a9096'; g.fillRect(Math.round(px0 + rx), Math.round(py0 + ry), 1, 1); }
+    for (let k = 0; k < pw; k += 4) {                                  // hazard stripe
+      g.fillStyle = (k / 4) % 2 ? '#1a1a1a' : '#c9a227';
+      g.fillRect(Math.round(px0 + k), Math.round(py0 + ph - 4), 4, 2);
+    }
+    // the button: a fat red cylinder, sinks when pressed
+    const down = btn.classList.contains('down') || now - B.pressT < 90;
+    const r = brad * 1.05, top = by - (down ? 0 : 2);
+    g.fillStyle = '#4a0c08'; g.beginPath(); g.ellipse(bx, by + 2, r, r * 0.55, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#7a140d'; g.fillRect(Math.round(bx - r), Math.round(top), Math.round(r * 2), Math.round(by + 2 - top));
+    g.fillStyle = down ? '#a01c12' : '#c8261a'; g.beginPath(); g.ellipse(bx, top, r, r * 0.55, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,200,180,0.7)'; g.fillRect(Math.round(bx - r * 0.45), Math.round(top - r * 0.25), Math.max(1, Math.round(r * 0.3)), 1);
+
+    // nixie counter where the number lives (counts down during launch)
+    const shown = runTier >= 17 && B.launchAt ? String(Math.max(0, 10 - (count - B.launchAt))) : String(count);
+    nixie(g, shown, nx, ny, Math.max(10, H * 0.12));
+    // record, stencilled small on the panel
+    g.save(); g.font = `${Math.max(5, Math.round(H * 0.028))}px "Courier New", monospace`; g.fillStyle = '#c9cdd1'; g.textAlign = 'center';
+    g.fillText(`РЕКОРД ${best}`, bx, py0 + ph - 6); g.restore();
+
+    // radiation: a green crt on the wall echoing the count
+    if (runTier >= 15) {
+      const mw = W * 0.2, mh = mw * 0.75, mx = W * 0.72, my = H * 0.2;
+      g.fillStyle = '#222'; g.fillRect(Math.round(mx - 2), Math.round(my - 2), Math.round(mw + 4), Math.round(mh + 4));
+      g.fillStyle = '#031a06'; g.fillRect(Math.round(mx), Math.round(my), Math.round(mw), Math.round(mh));
+      g.save(); g.font = `${Math.max(6, Math.round(mh * 0.32))}px "Courier New", monospace`; g.fillStyle = '#5dff7a'; g.shadowColor = '#5dff7a'; g.shadowBlur = 4;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(count), mx + mw / 2, my + mh / 2); g.restore();
+      for (let y = 0; y < mh; y += 2) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(Math.round(mx), Math.round(my + y), Math.round(mw), 1); }
+      const roll = (t * 18) % mh;
+      g.fillStyle = 'rgba(120,255,140,0.08)'; g.fillRect(Math.round(mx), Math.round(my + roll), Math.round(mw), 3);
+    }
+
+    // geiger ambience: past a point the counter keeps ticking on its own, faster the deeper you are
+    const into = count - bunkerStart;
+    if (runTier >= 15 && !B.dead && !B.white && into > 45) {
+      const rate = Math.min(28, (into - 45) * 0.18);             // clicks per second
+      const dt = Math.min(0.1, (now - (B.lastT || now)) / 1000);
+      if (Math.random() < rate * dt) geiger(1, 0.12);
+    }
+    B.lastT = now;
+    // dust in the light
+    for (const p of B.dust) {
+      p.x = (p.x + p.vx + W) % W; p.y = (p.y + p.vy + H) % (H * 0.82);
+      const dd = Math.hypot(p.x - lx, p.y - ly);
+      g.fillStyle = `rgba(255,230,190,${Math.max(0, 0.6 - dd / (W * 0.35)) * lit})`;
+      g.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+    }
+
+    // lighting: everything falls into dark away from the bulb
+    const dark = g.createRadialGradient(lx, ly, 2, lx, ly, Math.max(W, H) * 0.85);
+    dark.addColorStop(0, `rgba(0,0,0,${B.dead ? 0.97 : 0})`);
+    dark.addColorStop(0.35, `rgba(0,0,0,${B.dead ? 0.97 : 0.35})`);
+    dark.addColorStop(1, `rgba(0,0,0,${B.dead ? 0.99 : 0.88})`);
+    g.fillStyle = dark; g.fillRect(-4, -4, W + 8, H + 8);
+    // the bulb itself
+    g.strokeStyle = '#111'; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(lx, ly); g.stroke();
+    if (lit) {
+      g.save(); g.globalCompositeOperation = 'lighter';
+      const glow = g.createRadialGradient(lx, ly + 2, 0, lx, ly + 2, H * 0.12);
+      glow.addColorStop(0, 'rgba(255,214,150,0.9)'); glow.addColorStop(1, 'rgba(255,180,90,0)');
+      g.fillStyle = glow; g.fillRect(lx - H * 0.12, ly - H * 0.1, H * 0.24, H * 0.24);
+      g.restore();
+      g.fillStyle = '#fff3d6'; g.fillRect(Math.round(lx - 1), Math.round(ly), 3, 3);
+    }
+    // alarm: a red beacon sweeping the room
+    if (runTier >= 16 && !B.dead) {
+      const a = t * 3.2, sxp = W * 0.92, syp = H * 0.08;
+      g.save(); g.globalCompositeOperation = 'lighter';
+      g.fillStyle = 'rgba(255,30,20,0.22)';
+      g.beginPath(); g.moveTo(sxp, syp);
+      g.arc(sxp, syp, W * 1.2, a - 0.25, a + 0.25); g.closePath(); g.fill();
+      g.fillStyle = `rgba(255,20,10,${0.18 * Math.max(0, Math.cos(a - Math.PI * 0.75))})`; g.fillRect(-4, -4, W + 8, H + 8);
+      g.restore();
+      g.fillStyle = '#ff2a1a'; g.fillRect(Math.round(sxp - 1), Math.round(syp - 1), 3, 2);
+    }
+    // launch: everything goes white, then stays white
+    if (B.white) {
+      const k = Math.min(1, (now - B.white) / 1600);
+      g.fillStyle = `rgba(255,255,255,${k})`; g.fillRect(-4, -4, W + 8, H + 8);
+      if (k >= 1) {                         // the afterimage, until act v exists
+        stencil(g, 'ПУСК', W / 2, H * 0.3, big * 1.4, 0.12, 5);
+        g.save(); g.font = `${Math.max(8, Math.round(H * 0.06))}px "Courier New", monospace`; g.fillStyle = 'rgba(0,0,0,0.55)';
+        g.textAlign = 'center'; g.fillText(String(count), W / 2, H * 0.5); g.restore();
+      }
+    }
+    bkRaf = requestAnimationFrame(drawBunker);
+  }
+
+  // bunker sounds
+  let humNodes = null;
+  function hum(on) {
+    if (!ac) return;
+    const t = ac.currentTime;
+    if (on && !humNodes) {
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.4);
+      const oscs = [50, 100, 150].map((f, i) => { const o = ac.createOscillator(); o.type = i ? 'sine' : 'sawtooth'; o.frequency.value = f; const og = ac.createGain(); og.gain.value = [0.5, 0.35, 0.15][i]; o.connect(og).connect(g); o.start(t); return o; });
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+      g.connect(lp).connect(ac.destination);
+      humNodes = { g, oscs };
+    } else if (!on && humNodes) {
+      const h = humNodes; humNodes = null;
+      h.g.gain.cancelScheduledValues(t); h.g.gain.setValueAtTime(Math.max(h.g.gain.value, 0.0001), t);
+      h.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15); h.oscs.forEach(o => o.stop(t + 0.2));
+    }
+  }
+  function clunk(v = 1) {
+    if (!ac) return;
+    const t = ac.currentTime;
+    noiseBurst(0.09, 1800, 120, 'lowpass', 0.45 * v);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    g.gain.setValueAtTime(0.5 * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.2);
+    const m = ac.createOscillator(), mg = ac.createGain();              // the metal latch
+    m.type = 'square'; m.frequency.value = 2300;
+    mg.gain.setValueAtTime(0.03 * v, t + 0.01); mg.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    m.connect(mg).connect(ac.destination); m.start(t + 0.01); m.stop(t + 0.05);
+  }
+  function drip() {
+    if (!ac || !B || B.dead) return;
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(1900, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.06);
+    g.gain.setValueAtTime(0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    const d = ac.createDelay(); d.delayTime.value = 0.18; const fb = ac.createGain(); fb.gain.value = 0.35;
+    o.connect(g); g.connect(ac.destination); g.connect(d); d.connect(fb).connect(d); d.connect(ac.destination);
+    o.start(t); o.stop(t + 0.15);
+  }
+  function geiger(n, vol = 0.25) {
+    if (!ac) return;
+    const t = ac.currentTime;
+    for (let i = 0; i < n; i++) {
+      const at = t + Math.random() * 0.25;
+      const src = ac.createBufferSource(), b = ac.createBuffer(1, 64, ac.sampleRate), ch = b.getChannelData(0);
+      for (let k = 0; k < 64; k++) ch[k] = (Math.random() * 2 - 1) * (1 - k / 64);
+      const g = ac.createGain(); g.gain.value = vol;
+      src.buffer = b; src.connect(g).connect(ac.destination); src.start(at);
+    }
+  }
+  function klaxon() {
+    if (!ac) return;
+    const t = ac.currentTime;
+    [0, 0.45].forEach((off, i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = i ? 330 : 440; lp.type = 'lowpass'; lp.frequency.value = 1800;
+      g.gain.setValueAtTime(0.0001, t + off); g.gain.exponentialRampToValueAtTime(0.09, t + off + 0.03);
+      g.gain.setValueAtTime(0.09, t + off + 0.38); g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.43);
+      o.connect(lp).connect(g).connect(ac.destination); o.start(t + off); o.stop(t + off + 0.45);
+    });
+  }
+  function launchRumble(len) {
+    if (!ac) return;
+    noiseBurst(len, 400, 30, 'lowpass', 0.6);
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(30, t); o.frequency.linearRampToValueAtTime(55, t + len * 0.6);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + len * 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + len);
+    if (B) { const iv = setInterval(() => { if (!B) return clearInterval(iv); B.shake = Math.max(B.shake, 3); }, 50); setTimeout(() => { clearInterval(iv); hum(false); }, 1600); }
+  }
+
   // ---- particles ------------------------------------------------------------
   const cv = $('fx'), cx = cv.getContext('2d');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1650,7 +2070,7 @@
     }
     return [-14, 0, 14].map((d, i) => `hsl(${(hue + d + 360) % 360}, ${sat}%, ${Math.min(97, lit + (i - 1) * 8)}%)`);
   }
-  const burst = (h = 0, t = 0, surge = 0) => spawn(10 + Math.round(h * h * 90) + t * 10 + Math.round(surge * 80), 3.2 + h * 5 + t * 0.6 + surge * 3, palette(), 38 + h * 30, 0.06);
+  const burst = (h = 0, t = 0, surge = 0) => spawn(Math.round((10 + h * h * 90 + t * 10 + surge * 80) * crazy()), 3.2 + h * 5 + t * 0.6 + surge * 3, palette(), 38 + h * 30, 0.06);
   const shatter = (d = 0) => spawn(60 + Math.round(d * 220), 6 + d * 9, d > 0.3 ? ['#5d544c', '#8a7b6b', '#ff4b3e', '#ff8a6b', '#fff1c2'] : ['#5d544c', '#8a7b6b', '#ff4b3e'], 70 + d * 60, 0.18);
   function ember() {
     const c = center();
@@ -1719,6 +2139,26 @@
   });
   $('leave').addEventListener('click', leaveRoom);
 
+  const storyToggle = $('storyToggle');
+  storyToggle.checked = story;
+  function setStory(on) {
+    story = on;
+    storyToggle.checked = on;
+    store.set('onemore.story', on ? '1' : '0');
+    best = parseInt(store.get(bestKey()) || '0', 10) || 0;
+    if (alive || count) reset(); else { showBest(); updateRing(); }
+  }
+  function lockStory(locked) {
+    storyToggle.disabled = locked;
+    $('modeRow').classList.toggle('locked', locked);
+    $('modeNote').textContent = locked ? 'not available in rooms' : 'checkpoints · solo only';
+  }
+  storyToggle.addEventListener('change', () => {
+    if (room) { storyToggle.checked = false; return; }
+    setStory(storyToggle.checked);
+    toast(story ? 'story mode' : 'classic mode', story ? 'good' : '');
+  });
+
   // erase progress: the button only reveals a slider; dragging it all the way is the real confirmation
   const slideBox = $('slideBox'), slide = $('slide');
   $('eraseBtn').addEventListener('click', () => {
@@ -1740,7 +2180,7 @@
   slide.addEventListener('change', snapBack);
   slide.addEventListener('input', () => { if (+slide.value >= 98) eraseProgress(); });
   function eraseProgress() {
-    ['onemore.best', 'onemore.tiers', 'onemore.drift', 'onemore.runs'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+    ['onemore.best', 'onemore.best.story', 'onemore.tiers', 'onemore.drift', 'onemore.runs'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
     best = 0; discovered = 0; drift = 0; runs = [];
     slideBox.hidden = true; slide.value = 0;
     $('eraseBtn').textContent = 'Erase progress';
@@ -1773,6 +2213,8 @@
     if (typeof Peer === 'undefined') { setStatus('couldn’t load the p2p library. offline?'); return; }
     teardown();
     leaving = false;
+    if (story) { setStory(false); toast('story mode is off in rooms'); }
+    lockStory(true);
     room = code;
     store.set('onemore.room', code);
     setJoined(true);
@@ -1876,6 +2318,7 @@
   }
   function leaveRoom() {
     leaving = true; room = null;
+    lockStory(false);
     teardown();
     setJoined(false);
     setStatus('left the room.');
@@ -2080,6 +2523,14 @@
       if (i < 0 || i >= TIERS.length) return 'tiers: ' + TIERS.map(t => t.name).join(', ');
       if (!alive) reset();
       dbgTag();
+      if (i >= 13) {                         // act iv: needs story mode, skips straight in
+        if (!story) return 'act iv is story mode only: toggle it in the menu';
+        if (!bunkerStart) { count = Math.max(count, tierCount(12) + 120); runTier = 13; enterBunker(); }
+        bunkerStart = Math.min(bunkerStart, count - TIERS[i].off);
+        press();
+        return `${TIERS[i].name} at ${count}`;
+      }
+      if (i >= CLASSIC_MAX && !story) return 'that one is story mode only';
       const target = tierCount(i);
       if (count < target) { count = target - 1; press(); }
       return `${TIERS[i].name} at ${count}`;
