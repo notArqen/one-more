@@ -228,6 +228,7 @@
     -webkit-text-stroke: 2px #fff;
     text-shadow: 0 0 2px #fff, 0 0 8px #fff, 0 0 22px #fff, 0 0 48px rgba(255,255,255,0.8), 0 0 110px rgba(255,220,180,0.6) !important;
   }
+  body.void .zoomtrail { color: #fff !important; }
   body.void .best, body.void h1, body.void .tagline, body.void .hint { color: rgba(255,255,255,0.6); }
   .invert { position: fixed; inset: 0; pointer-events: none; background: #fff; mix-blend-mode: difference; opacity: 0; z-index: 4; }
   .megashock {
@@ -578,7 +579,7 @@
     if (t >= 3) { sparkleArp(count); shockwave(t); }
     if (t >= 5) whoosh();
     if (t >= 6) spawn(18, 7, ['#ff4b3e', '#ffd36b', '#6bd3ff', '#b26bff', '#6bff9e'], 80, 0.12);
-    if (t >= 7 && count % 4 === 0 && !reduce) $('invert').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
+    if (t === 7 && count % 4 === 0 && !reduce) $('invert').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
     if (t >= 10) megaShock();
   }
 
@@ -838,26 +839,30 @@
     const live = alive && !frozen;
     const t = live ? runTier : 0, hh = live ? heat : 0, pp = live ? pressPulse : 0;
     const f = [];
-    // RGB split across the whole stage
-    const split = t >= 3 ? 1 + hh * 3 + pp * 6 : (hh > 0.6 ? pp * 3 : 0);
+    // the black hole (tier 8) is the climax: it gets the screen to itself, then the heavy lens
+    // effects come back harder afterwards. before it, everything stays a notch below it.
+    const inVoid = t === 8, post = t >= 9;
+    // RGB split: a flicker on presses before the hole, a full tear after it
+    const split = post ? 2 + hh * 4 + pp * 8 : inVoid ? 0 : t >= 3 ? pp * 2.5 + hh * 0.8 : 0;
     if (split > 0.3) f.push(`drop-shadow(${-split}px 0 rgba(255,0,70,0.55))`, `drop-shadow(${split}px 0 rgba(0,220,255,0.55))`);
     // lens bloom / contrast
-    if (hh > 0) f.push(`contrast(${1 + hh * 0.25})`, `saturate(${1 + hh * 0.35})`);
-    if (t >= 6) f.push(`drop-shadow(0 0 ${8 + pp * 14}px rgba(255,240,220,0.45))`);
+    if (hh > 0 && !inVoid) f.push(`contrast(${1 + hh * (post ? 0.35 : 0.18)})`, `saturate(${1 + hh * 0.3})`);
+    if (t >= 6 && !inVoid) f.push(`drop-shadow(0 0 ${(post ? 12 : 6) + pp * 12}px rgba(255,240,220,${post ? 0.5 : 0.3}))`);
     if (warping) f.push('url(#warp)');
     stage.style.filter = f.join(' ');
     // camera: slow push-in with heat, a punch on every press, and a drifting 3D tilt from "unhinged"
     const surge = live ? Math.min(1.5, Math.max(0, count - runBest) / 70) : 0;
-    stage.style.scale = 1 + hh * 0.05 + surge * 0.04 + pp * (0.012 + hh * 0.02);
-    if (t >= 4) {
+    // camera holds still in the void so the hole stays locked to the button
+    stage.style.scale = inVoid ? 1 + pp * 0.01 : 1 + hh * 0.04 + surge * 0.03 + pp * (0.012 + hh * 0.015);
+    if (post) {
       if (pp > 0.95) { tiltTX = (Math.random() - 0.5) * (4 + t); tiltTY = (Math.random() - 0.5) * (6 + t); }
     } else { tiltTX = tiltTY = 0; }
     tiltX += (tiltTX - tiltX) * 0.06; tiltY += (tiltTY - tiltY) * 0.06;
     stage.style.rotate = Math.abs(tiltX) + Math.abs(tiltY) > 0.05 ? `${tiltX.toFixed(2)} ${tiltY.toFixed(2)} 0 ${Math.hypot(tiltX, tiltY).toFixed(2)}deg` : '';
     // film grain + scanlines
-    grainEl.style.opacity = hh * 0.14 + (t >= 5 ? 0.05 : 0);
+    grainEl.style.opacity = inVoid ? 0 : post ? 0.16 : hh * 0.08;
     if (hh > 0) { grainI = (grainI + 1) % grainFrames.length; grainEl.style.backgroundImage = grainFrames[grainI]; }
-    scanEl.style.opacity = t >= 5 ? 0.35 + Math.random() * 0.1 : 0;
+    scanEl.style.opacity = t >= 10 ? 0.35 + Math.random() * 0.1 : 0;   // CRT only at the very end
   }
 
   function heatLoop() {
@@ -1167,6 +1172,7 @@
   function drawVoid(now) {
     voidRaf = 0;
     if (!bh) return;
+    if (!bh.collapse) bh.c = center();
     const W = voidCv.width, H = voidCv.height, c = bh.c, R = bh.R;
     const t = (now - bh.t0) / 1000;
     const rad = 105 * (bh.c.rad / 90);           // event horizon sits just outside the button
