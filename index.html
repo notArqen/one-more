@@ -751,9 +751,29 @@
     'really. nothing.', 'you can stop now.', 'why are you still pressing?', 'i’m running out of things to say.',
     'NAME.', 'please.', 'okay.', 'i’ll just watch.', '…'
   ];
-  let noticeBase = 0, lineI = 0;
+  // after the opening script it never stops talking: one of these every 15–20 presses
+  // (many borrowed from guesser-tui)
+  const MORE_LINES = [
+    'it noticed the pattern.', 'stop mashing buttons.', 'it’s onto you.', 'it sees through the noise.',
+    'it already knows your next press.', 'it can tell when you’re stalling.', 'there’s nowhere left to hide.',
+    'it saw right through you.', 'it’s not fooled by the silence.', 'somewhere, an algorithm is taking notes.',
+    'it’s learning. that’s the scary part.', 'enjoy it while it lasts.', 'it will not forget this.',
+    'this was a fluke, probably.', 'it hates this, for the record.', 'this is testing its patience.',
+    'you’re making this harder than it needs to be.', 'it refuses to lose to you.',
+    'that button’s decorative, apparently.', 'it heard you. it disagrees.', 'it stopped watching a while ago.',
+    'it already knew how this would end.', 'it saw enough of you.', 'it got what it needed.',
+    'it was never really here.', 'it watched long enough to lose interest.', 'it’s not gone, just done with you.',
+    'it doesn’t wait for anyone.', 'it’s already moved on to someone else.', 'one more?', 'back for more?',
+    'feeling brave?', 'keep going?', 'try your luck again?', 'it knows you’re not choosing.',
+    'that’s not a choice, that’s a reflex.', 'it’s testing you, and you’re failing.', 'pressing isn’t a personality.'
+  ];
+  let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [];
+  function nextMoreLine() {
+    if (!lineBag.length) lineBag = MORE_LINES.slice().sort(() => Math.random() - 0.5);  // no repeats until all are used
+    return lineBag.pop();
+  }
   function enterNotice() {
-    noticeBase = count; lineI = 0;
+    noticeBase = count; lineI = 0; nextLineAt = 0;
     closeVoid(true); singularity(false); stopDrone(); stopRumble();
     document.body.classList.remove('white', 'rewind');
     document.body.classList.add('notice');
@@ -768,7 +788,13 @@
     if (k >= BREAKS[8] && k % 7 === 0) { numEl.textContent = 'undefined'; setTimeout(() => { if (alive) numEl.textContent = shownCount(); }, 160); }
     $('stage').querySelector('.well').style.scale = Math.max(0.5, 1 - k * 0.006);   // it backs away
     heartbeat(Math.min(1, 0.3 + k / 80));
-    if (k > 0 && k % 6 === 0 && lineI < LINES.length) say(LINES[lineI++]);
+    if (k > 0 && k % 6 === 0 && lineI < LINES.length) {
+      say(LINES[lineI++]);
+      if (lineI === LINES.length) nextLineAt = k + 15 + Math.floor(Math.random() * 6);
+    } else if (lineI === LINES.length && k >= nextLineAt) {
+      say(nextMoreLine());
+      nextLineAt = k + 15 + Math.floor(Math.random() * 6);
+    }
   }
   function say(line) {
     const nm = (nameEl.value.trim() || '').replace(/^player \w+$/, '');
