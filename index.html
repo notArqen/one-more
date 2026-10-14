@@ -177,7 +177,15 @@
     -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.12));
     mask-image: linear-gradient(90deg, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.12));
   }
-  .ghost { width: 136px; text-align: center; opacity: 0.85; transition: opacity 400ms ease; }
+  .ghost { position: relative; width: 136px; text-align: center; opacity: 0.85; transition: opacity 400ms ease; pointer-events: auto; cursor: default; }
+  .gtip {
+    position: absolute; left: 50%; top: -30px; transform: translate(-50%, 4px); opacity: 0; pointer-events: none;
+    background: var(--panel); border: 1px solid var(--panel-line); color: var(--ink);
+    font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+    transition: opacity 150ms ease, transform 150ms var(--ease-out);
+  }
+  .ghost:active .gtip { opacity: 1; transform: translate(-50%, 0); }
+  @media (hover: hover) and (pointer: fine) { .ghost:hover .gtip { opacity: 1; transform: translate(-50%, 0); } }
   .ghost.hot { opacity: 1; }
   .ghost.out { opacity: 0.5; }
   .gwell {
@@ -209,6 +217,22 @@
   }
   :root[data-theme="light"] .gwell { background: #ddd2c3; }
   @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .gwell { background: radial-gradient(circle at 50% 40%, #cbbfaf, #e2d7c8); box-shadow: inset 0 3px 8px rgba(0,0,0,0.25); } }
+  canvas#void { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  .stage { z-index: 1; }
+  body { transition: background-color 600ms ease; }
+  body.void { background: #000; }
+  body.void .vignette { opacity: 0 !important; }
+  body.void .count span {
+    color: #000 !important;
+    -webkit-text-stroke: 2px #fff;
+    text-shadow: 0 0 2px #fff, 0 0 8px #fff, 0 0 22px #fff, 0 0 48px rgba(255,255,255,0.8), 0 0 110px rgba(255,220,180,0.6) !important;
+  }
+  body.void .best, body.void h1, body.void .tagline, body.void .hint { color: rgba(255,255,255,0.6); }
+  .invert { position: fixed; inset: 0; pointer-events: none; background: #fff; mix-blend-mode: difference; opacity: 0; z-index: 4; }
+  .megashock {
+    position: fixed; width: 200px; height: 200px; margin: -100px 0 0 -100px; border-radius: 50%;
+    border: 6px solid #fff; box-shadow: 0 0 40px #fff, inset 0 0 40px #fff; pointer-events: none; z-index: 3;
+  }
   .best {
     margin-top: -28px;
     font-size: 14px;
@@ -392,7 +416,10 @@
 </style>
 </head>
 <body>
+<canvas id="void"></canvas>
 <div class="vignette" id="vignette"></div>
+<div class="invert" id="invert"></div>
+<svg width="0" height="0" style="position:absolute"><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
 <div class="flash" id="flash"></div>
 <canvas id="fx"></canvas>
 
@@ -485,8 +512,12 @@
     { at: 5,  name: 'heating up' },
     { at: 10, name: 'on fire' },
     { at: 20, name: 'unhinged' },
-    { at: 35, name: 'absurd' },
-    { at: 50, name: 'mythical' }
+    { at: 30, name: 'absurd' },
+    { at: 42, name: 'mythical' },
+    { at: 55, name: 'reality bends' },
+    { at: 70, name: 'event horizon' },
+    { at: 90, name: 'singularity' },
+    { at: 120, name: 'heat death' }
   ];
   let runTier = 0, runBest = 0, runFresh = [];
   let discovered = parseInt(store.get('onemore.tiers') || '0', 10) || 0;
@@ -513,15 +544,16 @@
     tierSound(t);
     spawn(40 + t * 25, 5 + t, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 70, 0.03);
     if (t >= 4) startDrone();
+    if (t >= 8) openVoid();
+    if (t >= 9) singularity(true);
     publish('tier');
   }
 
   function renderTiers() {
-    $('tiers').innerHTML = TIERS.map((tr, i) => {
-      const n = i + 1;
-      if (n > discovered) return '<span>???</span>';
-      return `<span class="${runFresh.includes(n) ? 'fresh' : 'got'}">${tr.name}</span>`;
-    }).join('');
+    // only what you've found. no hint of how deep it goes
+    $('tiers').innerHTML = TIERS.slice(0, discovered).map((tr, i) =>
+      `<span class="${runFresh.includes(i + 1) ? 'fresh' : 'got'}">${tr.name}</span>`
+    ).join('');
   }
 
   // per-press extras, stacking by tier
@@ -530,6 +562,19 @@
     if (t >= 3) { sparkleArp(count); shockwave(t); }
     if (t >= 5) whoosh();
     if (t >= 6) spawn(18, 7, ['#ff4b3e', '#ffd36b', '#6bd3ff', '#b26bff', '#6bff9e'], 80, 0.12);
+    if (t >= 7 && count % 4 === 0 && !reduce) $('invert').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
+    if (t >= 10) megaShock();
+  }
+
+  function megaShock() {
+    if (reduce) return;
+    const c = center(), el = document.createElement('div');
+    el.className = 'megashock';
+    el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+    document.body.appendChild(el);
+    el.animate([{ transform: 'scale(0.9)', opacity: 1 }, { transform: `scale(${Math.hypot(innerWidth, innerHeight) / 90})`, opacity: 0 }],
+      { duration: 900, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }).onfinish = () => el.remove();
+    $('flash').animate([{ opacity: 0.45 }, { opacity: 0 }], { duration: 300 });
   }
 
   function shockwave(t, host = document.querySelector('.well')) {
@@ -552,6 +597,8 @@
     runTier = 0; runBest = best; runFresh = [];
     stopDrone();
     vignette.style.filter = '';
+    closeVoid(false);
+    singularity(false);
     updateRing();
     showBest();
     btn.classList.remove('dead', 'down');
@@ -562,7 +609,9 @@
     publish('reset');
   }
 
+  let pendingDeath = null;
   function press() {
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); const { d } = pendingDeath; pendingDeath = null; die(d); return; }
     if (!alive) return;
     count++;
     numEl.textContent = count;
@@ -581,8 +630,9 @@
     const t = tierAt(count);
     if (t > runTier) tierUp(t);
     tierPress(runTier, h);
-    burst(h, runTier);
-    kick(h);
+    const surge = Math.min(1.5, Math.max(0, count - runBest) / 70);
+    burst(h, runTier, surge);
+    kick(h, surge);
     updateRing();
     if (navigator.vibrate) navigator.vibrate(6);
     if (count === 1) { hint.style.opacity = 0; $('title').classList.add('gone'); }
@@ -593,12 +643,12 @@
 
     if (Math.random() < risk) {
       // the press lands like any other, then a beat of silence before it all goes
+      // a press during the pause cuts it short
       alive = false;
-      btn.disabled = true;
       const d = drama(count);
       frozen = true;
       if (d > 0.15) tension(d);
-      setTimeout(() => die(d), 240 + d * 760);
+      pendingDeath = { d, timer: setTimeout(() => { pendingDeath = null; die(d); }, 240 + d * 760) };
     }
   }
 
@@ -628,6 +678,8 @@
     thud(d);
     heatTarget = 0;
     stopDrone();
+    if (bh) collapseVoid();
+    singularity(false);
     if (navigator.vibrate) navigator.vibrate(d > 0.3 ? [60, 30, 120, 40, 200] : [30, 40, 60]);
     shakeStage(d);
     flashScreen(d);
@@ -735,12 +787,16 @@
     heat += (heatTarget - heat) * 0.08;
     if (heat < 0.002) heat = 0;
     const h = reduce || frozen ? 0 : heat;
-    const amp = h * h * 7 + h * 1.5;       // stays subtle low, gets unhinged high
+    const amp = (h * h * 7 + h * 1.5) * (bh ? 2.2 : 1) * (runTier >= 7 ? 1.4 : 1); // subtle low, unhinged high
     countEl.style.transform = h
       ? `translate(${(Math.random() - 0.5) * amp}px, ${(Math.random() - 0.5) * amp}px) rotate(${(Math.random() - 0.5) * h * 5}deg)`
       : '';
     numEl.style.color = heat ? `color-mix(in oklab, var(--ink), var(--red-hi) ${Math.round(heat * 100)}%)` : '';
-    numEl.style.textShadow = heat ? `0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})` : '';
+    if (runTier >= 7 && alive && !reduce) {
+      const o = 2 + Math.random() * 5 * heat;
+      numEl.style.textShadow = `${-o}px 0 rgba(255,0,70,0.85), ${o}px 0 rgba(0,220,255,0.85), 0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})`;
+    } else numEl.style.textShadow = heat ? `0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})` : '';
+    if (warping) turb.setAttribute('baseFrequency', (0.01 + Math.sin(performance.now() / 400) * 0.004).toFixed(4));
     vignette.style.opacity = heat * 0.9;
     aura.style.opacity = heat * (0.75 + Math.sin(performance.now() / (260 - heat * 140)) * 0.25);
     if (alive && !frozen && !reduce) {
@@ -755,9 +811,9 @@
   }
 
   // whole stage jolts on each press once it's hot
-  function kick(h) {
+  function kick(h, surge = 0) {
     if (!h || reduce) return;
-    const m = h * h * 10;
+    const m = h * h * 10 + surge * 14;
     stage.animate(
       [{ transform: `translate(${(Math.random() - 0.5) * m}px, ${(Math.random() - 0.5) * m}px)` }, { transform: 'none' }],
       { duration: 180, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }
@@ -779,6 +835,7 @@
     if (e.code !== 'Space' || e.target.closest('input')) return;
     e.preventDefault();
     if (over.classList.contains('show')) { reset(); return; }
+    if (over.classList.contains('show') === false && !alive && !pendingDeath) return;
     if (spaceHeld) return;           // no autorepeat — every press is a choice
     spaceHeld = true;
     unlockAudio(); down(); press();
@@ -839,7 +896,8 @@
   }
   // each tier gets its own voicing, rising: you only learn what it sounds like by getting there
   const TIER_CHORDS = [
-    [0, 4, 7, 12], [0, 5, 7, 14], [0, 4, 7, 11, 14], [0, 2, 7, 9, 16], [0, 4, 6, 11, 18], [0, 7, 12, 16, 19, 24]
+    [0, 4, 7, 12], [0, 5, 7, 14], [0, 4, 7, 11, 14], [0, 2, 7, 9, 16], [0, 4, 6, 11, 18], [0, 7, 12, 16, 19, 24],
+    [0, 3, 7, 10, 14], [-12, 0, 1, 7, 13], [-12, 0, 6, 12, 18], [-12, 0, 12, 19, 24, 28, 31]
   ];
   function tierSound(t) {
     if (!ac) return;
@@ -981,6 +1039,157 @@
     o.start(t); o.stop(t + 0.75 + d * 1.2);
   }
 
+  // ---- the void: far enough past your best, the background breaks away ------
+  const voidCv = $('void'), vx = voidCv.getContext('2d'), turb = $('turb');
+  let bh = null, voidRaf = 0, warping = false, rumble = null;
+  function sizeVoid() {
+    voidCv.width = innerWidth * dpr; voidCv.height = innerHeight * dpr;
+    voidCv.style.width = innerWidth + 'px'; voidCv.style.height = innerHeight + 'px';
+  }
+  addEventListener('resize', () => { sizeVoid(); if (bh) bh.c = center(); });
+
+  function openVoid() {
+    if (bh || reduce) return;
+    sizeVoid();
+    const c = center(), R = Math.hypot(innerWidth, innerHeight);
+    const bgCol = getComputedStyle(document.documentElement).getPropertyValue('--bg-glow').trim() || '#2a1d14';
+    // crack the background into wedges radiating from the button, then throw them away
+    const n = 18, shards = [];
+    let a0 = Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const a1 = a0 + (Math.PI * 2 / n) * (0.6 + Math.random() * 0.8);
+      const mid = (a0 + a1) / 2, k = 0.3 + Math.random() * 0.4;
+      shards.push({
+        pts: [[0, 0], [Math.cos(a0) * R, Math.sin(a0) * R], [Math.cos(mid) * R * 1.1, Math.sin(mid) * R * 1.1], [Math.cos(a1) * R, Math.sin(a1) * R]],
+        crack: [Math.cos(mid) * R * k, Math.sin(mid) * R * k],
+        dx: Math.cos(mid), dy: Math.sin(mid), v: 0, rot: 0, vr: (Math.random() - 0.5) * 0.02
+      });
+      a0 = a1;
+    }
+    const stars = Array.from({ length: 420 }, () => ({ r: Math.random() * R, a: Math.random() * Math.PI * 2, s: Math.random() * 1.6 + 0.3 }));
+    const disk = Array.from({ length: 700 }, () => ({ r: 1.15 + Math.random() * 1.9, a: Math.random() * Math.PI * 2, s: 0.6 + Math.random() * 0.8 }));
+    bh = { t0: performance.now(), c, R, shards, stars, disk, bgCol, suck: false, collapse: 0, closing: 0 };
+    document.body.classList.add('void');
+    voidSound();
+    if (!voidRaf) voidRaf = requestAnimationFrame(drawVoid);
+  }
+  function closeVoid(animated = true) {
+    if (!bh) return;
+    if (!animated) { bh = null; vx.clearRect(0, 0, voidCv.width, voidCv.height); document.body.classList.remove('void'); stopRumble(); return; }
+    bh.closing = performance.now();
+  }
+  // dying inside it: the hole swallows the screen, then lets go
+  function collapseVoid() { if (bh) { bh.collapse = performance.now(); bh.suck = true; stopRumble(); } }
+
+  function singularity(on) {
+    warping = on && !reduce;
+    stage.style.filter = warping ? 'url(#warp)' : '';
+    if (bh) bh.suck = on || !!bh.collapse;
+  }
+
+  function drawVoid(now) {
+    voidRaf = 0;
+    if (!bh) return;
+    const W = voidCv.width, H = voidCv.height, c = bh.c, R = bh.R;
+    const t = (now - bh.t0) / 1000;
+    const rad = 105 * (bh.c.rad / 90);           // event horizon sits just outside the button
+    let power = Math.min(1, t / 1.6);
+    let fade = 1, swallow = 0;
+    if (bh.collapse) { swallow = Math.min(1, (now - bh.collapse) / 700); fade = 1 - Math.max(0, (now - bh.collapse - 900) / 900); }
+    if (bh.closing) fade = Math.min(fade, 1 - (now - bh.closing) / 500);
+    if (fade <= 0) { closeVoid(false); return; }
+
+    vx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vx.clearRect(0, 0, W, H);
+    vx.globalAlpha = fade;
+    vx.fillStyle = '#000'; vx.fillRect(0, 0, innerWidth, innerHeight);
+
+    const sing = warping ? 2.2 : 1;
+    // stars spiral in and stretch near the edge
+    vx.fillStyle = '#fff';
+    for (const st of bh.stars) {
+      st.a += (0.0015 + 4 / (st.r + 30) * 0.05) * sing * power;
+      st.r -= (0.15 + 260 / (st.r + 20)) * 0.25 * sing * power;
+      if (st.r < rad * 0.9) { st.r = R * (0.6 + Math.random() * 0.4); st.a = Math.random() * Math.PI * 2; }
+      const x = c.x + Math.cos(st.a) * st.r, y = c.y + Math.sin(st.a) * st.r;
+      vx.globalAlpha = fade * Math.min(1, (st.r - rad) / 200) * 0.9;
+      vx.fillRect(x, y, st.s, st.s);
+    }
+    // accretion disk: back half, hole, front half
+    const drawDisk = front => {
+      vx.globalCompositeOperation = 'lighter';
+      for (const p of bh.disk) {
+        const sa = Math.sin(p.a);
+        if ((sa > 0) !== front) continue;
+        const r = rad * p.r;
+        const x = c.x + Math.cos(p.a) * r, y = c.y + sa * r * 0.28;
+        const k = (p.r - 1.15) / 1.9;
+        vx.globalAlpha = fade * power * (1 - k * 0.7) * 0.8;
+        vx.fillStyle = k < 0.2 ? '#fff6e0' : k < 0.5 ? '#ffb347' : '#ff4b3e';
+        vx.beginPath(); vx.arc(x, y, p.s * (front ? 1.6 : 1.1), 0, Math.PI * 2); vx.fill();
+      }
+      vx.globalCompositeOperation = 'source-over';
+    };
+    for (const p of bh.disk) p.a += 0.035 * p.s / p.r * sing * (0.3 + power);
+    drawDisk(false);
+    // the hole + photon ring
+    const holeR = rad * (0.6 + 0.4 * power) + swallow * R;
+    vx.globalAlpha = fade;
+    const g = vx.createRadialGradient(c.x, c.y, holeR * 0.9, c.x, c.y, holeR * 1.8);
+    g.addColorStop(0, 'rgba(255,200,140,0.35)'); g.addColorStop(1, 'rgba(255,120,60,0)');
+    vx.fillStyle = g; vx.beginPath(); vx.arc(c.x, c.y, holeR * 1.8, 0, Math.PI * 2); vx.fill();
+    vx.fillStyle = '#000'; vx.beginPath(); vx.arc(c.x, c.y, holeR, 0, Math.PI * 2); vx.fill();
+    vx.strokeStyle = '#fff'; vx.lineWidth = 2; vx.shadowColor = '#ffe2b8'; vx.shadowBlur = 24 + Math.sin(now / 120) * 8;
+    vx.beginPath(); vx.arc(c.x, c.y, holeR + 1, 0, Math.PI * 2); vx.stroke();
+    vx.shadowBlur = 0;
+    if (!swallow) drawDisk(true);
+
+    // background shards breaking away
+    const st = Math.max(0, t - 0.25);
+    vx.globalAlpha = 1;
+    for (const sh of bh.shards) {
+      if (t < 0.25) {                              // cracks first
+        vx.strokeStyle = 'rgba(255,255,255,0.7)'; vx.lineWidth = 1.5;
+        vx.beginPath(); vx.moveTo(c.x, c.y); vx.lineTo(c.x + sh.crack[0] * (t / 0.25), c.y + sh.crack[1] * (t / 0.25)); vx.stroke();
+      }
+      sh.v += 0.35 * (st > 0 ? 1 : 0);
+      sh.rot += sh.vr * (st > 0 ? 1 : 0);
+      const ox = sh.dx * sh.v * st * 6, oy = sh.dy * sh.v * st * 6;
+      if (Math.hypot(ox, oy) > R) continue;
+      vx.save();
+      vx.translate(c.x + ox, c.y + oy); vx.rotate(sh.rot);
+      vx.fillStyle = bh.bgCol;
+      vx.strokeStyle = 'rgba(255,255,255,0.25)'; vx.lineWidth = 1;
+      vx.beginPath(); sh.pts.forEach(([x, y], i) => i ? vx.lineTo(x, y) : vx.moveTo(x, y)); vx.closePath();
+      vx.fill(); vx.stroke();
+      vx.restore();
+    }
+    vx.globalAlpha = 1;
+    voidRaf = requestAnimationFrame(drawVoid);
+  }
+
+  function voidSound() {
+    if (!ac) return;
+    // the crack
+    noiseBurst(0.9, 6000, 60, 'lowpass', 0.5);
+    // a rumble that sits under everything until the run ends
+    const t = ac.currentTime, g = ac.createGain(), o = ac.createOscillator(), o2 = ac.createOscillator();
+    o.type = 'sine'; o.frequency.value = 34;
+    o2.type = 'triangle'; o2.frequency.value = 51; o2.detune.value = 7;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 1.5);
+    o.connect(g); o2.connect(g); g.connect(ac.destination);
+    o.start(t); o2.start(t);
+    rumble = { g, oscs: [o, o2] };
+  }
+  function stopRumble() {
+    if (!ac || !rumble) return;
+    const t = ac.currentTime, r = rumble; rumble = null;
+    r.g.gain.cancelScheduledValues(t);
+    r.g.gain.setValueAtTime(Math.max(r.g.gain.value, 0.0001), t);
+    r.g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    r.oscs.forEach(o => o.stop(t + 1.3));
+  }
+
   // ---- particles ------------------------------------------------------------
   const cv = $('fx'), cx = cv.getContext('2d');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1013,7 +1222,7 @@
     }
     if (!raf) raf = requestAnimationFrame(tick);
   }
-  const burst = (h = 0, t = 0) => spawn(10 + Math.round(h * h * 90) + t * 10, 3.2 + h * 5 + t * 0.6, h > 0.5 ? ['#ff8a6b', '#ffd1a8', '#ff4b3e', '#fff1c2'] : ['#ff8a6b', '#ffd1a8', '#ff4b3e'], 38 + h * 30, 0.06);
+  const burst = (h = 0, t = 0, surge = 0) => spawn(10 + Math.round(h * h * 90) + t * 10 + Math.round(surge * 80), 3.2 + h * 5 + t * 0.6 + surge * 3, h > 0.5 ? ['#ff8a6b', '#ffd1a8', '#ff4b3e', '#fff1c2'] : ['#ff8a6b', '#ffd1a8', '#ff4b3e'], 38 + h * 30, 0.06);
   const shatter = (d = 0) => spawn(60 + Math.round(d * 220), 6 + d * 9, d > 0.3 ? ['#5d544c', '#8a7b6b', '#ff4b3e', '#ff8a6b', '#fff1c2'] : ['#5d544c', '#8a7b6b', '#ff4b3e'], 70 + d * 60, 0.18);
   function ember() {
     const c = center();
@@ -1035,6 +1244,7 @@
     for (const p of parts) {
       const ts = timeScale;
       p.vx *= 1 - 0.04 * ts; p.vy = p.vy * (1 - 0.04 * ts) + p.g * ts;
+      if (bh && bh.suck) { const c = bh.c; p.vx += (c.x - p.x) * 0.0012 * ts; p.vy += (c.y - p.y) * 0.0012 * ts; }
       p.x += p.vx * ts; p.y += p.vy * ts; p.life -= ts;
       const k = p.life / p.max;
       cx.globalAlpha = k;
@@ -1310,6 +1520,14 @@
       ct.style.color = h ? `color-mix(in oklab, var(--ink), var(--red-hi) ${Math.round(h * 100)}%)` : '';
       ct.style.textShadow = h ? `0 0 ${h * 28}px rgba(255, 75, 62, ${h * 0.7})` : '';
       cap.style.boxShadow = h ? `0 0 ${10 + h * 30}px rgba(255, 75, 62, ${0.3 + h * 0.5})` : '';
+      // the well's rim reads their best at a glance: dull for small, hot and blooming for big
+      const lvl = Math.min(1, Math.log((g.best || 0) + 1) / Math.log(150));
+      const col = `hsl(${30 - lvl * 70}, ${8 + lvl * 92}%, ${42 + lvl * 26}%)`;
+      const well = g.querySelector('.gwell');
+      well.style.boxShadow = `inset 0 3px 8px rgba(0,0,0,0.8), 0 0 0 ${2 + lvl * 2}px ${col}, 0 0 ${lvl * lvl * 36}px ${lvl * 6}px ${col}`;
+      well.style.filter = lvl > 0.5 ? `contrast(${1 + (lvl - 0.5) * 0.6}) saturate(${1 + lvl})` : '';
+      const sh = reduce || lvl < 0.6 ? 0 : (lvl - 0.6) * 3;
+      well.style.translate = sh ? `${(Math.random() - 0.5) * sh}px ${(Math.random() - 0.5) * sh}px` : '';
     }
     requestAnimationFrame(ghostLoop);
   }
@@ -1323,13 +1541,15 @@
       if (!g) {
         g = document.createElement('div');
         g.className = 'ghost';
-        g.innerHTML = '<div class="gwell"><div class="gbtn"><span class="gcap"></span></div></div><div class="gname"></div><div class="gct"></div>';
+        g.innerHTML = '<div class="gtip"></div><div class="gwell"><div class="gbtn"><span class="gcap"></span></div></div><div class="gname"></div><div class="gct"></div>';
         ghosts.set(st.uid, g);
         ghostsEl.appendChild(g);
         g.animate([{ opacity: 0, transform: 'scale(0.9)' }, {}], { duration: 300, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
       }
-      g.querySelector('.gname').textContent = st.name;
+      if (!g.tierTimer || g.querySelector('.gname').style.color === '') g.querySelector('.gname').textContent = st.name;
       g.querySelector('.gct').textContent = st.count;
+      g.querySelector('.gtip').textContent = `best ${st.best}`;
+      g.best = st.best;
       g.classList.toggle('out', !st.alive);
       g.classList.toggle('hot', st.alive && st.best > 0 && st.count > st.best);
     }
@@ -1380,6 +1600,9 @@
 
   reset();
   heatLoop();
+
+  // ?dev: jump ahead to preview deep tiers (risk is untouched)
+  if (new URLSearchParams(location.search).has('dev')) window.__onemore = { skip(n) { count += n - 1; press(); } };
 })();
 </script>
 </body>
