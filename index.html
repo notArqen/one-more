@@ -257,14 +257,6 @@
     background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0 1px, transparent 1px 3px);
     mix-blend-mode: multiply;
   }
-  .rhythm {
-    margin-top: -34px; height: 14px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--muted); opacity: 0; transition: opacity 300ms ease, color 300ms ease;
-    font-variant-numeric: tabular-nums;
-  }
-  .rhythm.on { opacity: 0.8; }
-  .rhythm.hot { color: #ffd36b; opacity: 1; }
   /* light leak: a warm smear of light drifting across the frame (from "on fire") */
   .leak {
     position: fixed; inset: -20%; pointer-events: none; opacity: 0; z-index: 3; mix-blend-mode: screen;
@@ -282,8 +274,8 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   /* depth of field: the scene's edges go soft (from "mythical") */
-  .best, .hint, .rhythm, h1, .tagline { transition: filter 1.2s ease, color 300ms ease, opacity 300ms ease; }
-  .dof h1, .dof .tagline, .dof .best, .dof .hint, .dof .rhythm { filter: blur(1.4px); }
+  .best, .hint, h1, .tagline { transition: filter 1.2s ease, color 300ms ease, opacity 300ms ease; }
+  .dof h1, .dof .tagline, .dof .best, .dof .hint { filter: blur(1.4px); }
   /* the other side: a white hole. everything flips */
   body.white { background: #f3efe8; }
   body.white canvas#void { filter: invert(1) hue-rotate(180deg); }
@@ -294,7 +286,7 @@
   body.white .btn::before { background: #000; }
   body.white .cap { background: radial-gradient(ellipse 22% 14% at 36% 26%, #000 98%, transparent 100%), radial-gradient(circle at 50% 50%, #fff, #e8e4dc 70%); box-shadow: inset 0 0 0 2px #000; }
   body.white .well { background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
-  body.white .best, body.white h1, body.white .tagline, body.white .hint, body.white .rhythm { color: rgba(0,0,0,0.55); }
+  body.white .best, body.white h1, body.white .tagline, body.white .hint { color: rgba(0,0,0,0.55); }
   body.white .zoomtrail { color: #000 !important; }
   body.white .ring .fill, body.white .ring.past .fill { stroke: #000; }
   .echo { position: fixed; pointer-events: none; z-index: 0; font-weight: 700; font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.12); }
@@ -315,9 +307,8 @@
   body.notice .btn.down .cap { background: #1c1c1c; }
   body.notice .ring .track { stroke: rgba(255,255,255,0.08); }
   body.notice .ring .fill { stroke: rgba(255,255,255,0.35) !important; filter: none !important; }
-  body.notice .count span { color: #e6e6e6 !important; }
+  body.notice:not(.returning) .count span { color: #e6e6e6 !important; }
   body.notice .best, body.notice .best.beating { color: #555 !important; }
-  body.notice .rhythm { opacity: 0 !important; }
   body.notice .whisper { color: #bdbdbd; }
   body.notice .ghosts { opacity: 0.25; filter: grayscale(1); }
   /* the longer you stay, the more of the stylesheet quietly stops applying */
@@ -327,7 +318,7 @@
   body.b4 .count { align-self: flex-start; letter-spacing: normal; font-weight: 400; }
   body.b5 .well { background: none; outline: 1px solid #333; }
   body.b5 .ring { transform: rotate(-90deg) translate(7px, -4px); }
-  body.b6 .best, body.b6 .hint, body.b6 .rhythm, body.b6 .whisper { font: 16px "Times New Roman", serif; letter-spacing: normal; text-transform: none; }
+  body.b6 .best, body.b6 .hint, body.b6 .whisper { font: 16px "Times New Roman", serif; letter-spacing: normal; text-transform: none; }
   body.b7 .whisper { left: 0; transform: none; text-align: left; }
   body.b7 .tab { appearance: auto; -webkit-appearance: auto; background: buttonface; border-radius: 0; }
   body.b8 *, body.b8 *::before { transition: none !important; }
@@ -335,8 +326,8 @@
   body.b8 .btn::before { transform: translateY(9px) translateX(5px); }
   body.b9 * { font-family: monospace !important; }
   body.b9 .cap { background: #808080; }
-  body.notice .count span { color: var(--ink) !important; text-shadow: none !important; -webkit-text-stroke: 0; }
-  body.notice .vignette, body.notice .aura, body.notice .rays, body.notice .leak, body.notice .grain, body.notice .scan { opacity: 0 !important; }
+  body.notice:not(.returning) .count span { color: var(--ink) !important; text-shadow: none !important; -webkit-text-stroke: 0; }
+  body.notice:not(.returning) .vignette, body.notice:not(.returning) .aura, body.notice:not(.returning) .rays, body.notice:not(.returning) .leak, body.notice:not(.returning) .grain, body.notice .scan { opacity: 0 !important; }
   body.notice .btn { cursor: crosshair; }
   .whisper {
     position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2;
@@ -351,6 +342,7 @@
   .slide input { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; cursor: grab; }
   .slide input::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 42px; border-radius: 10px; background: var(--red); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
   .slide input::-moz-range-thumb { width: 44px; height: 42px; border: 0; border-radius: 10px; background: var(--red); }
+  .drain { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
   .best {
     margin-top: -28px;
     font-size: 14px;
@@ -542,6 +534,7 @@
 <div class="scan" id="scan"></div>
 <div class="leak" id="leak"></div>
 <div class="vhs" id="vhs"></div>
+<div class="drain" id="drain"></div>
 <svg width="0" height="0" style="position:absolute"><filter id="haze"><feTurbulence id="hazeTurb" type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" id="hazeMap" scale="0"/></filter><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
 <div class="flash" id="flash"></div>
 <canvas id="fx"></canvas>
@@ -581,7 +574,6 @@
   <div class="whisper" id="whisper"></div>
   <div class="count" id="count"><span id="num">0</span></div>
   <div class="best" id="bestLive">best 0</div>
-  <div class="rhythm" id="rhythm"></div>
 
   <div class="well">
     <div class="aura" id="aura"></div>
@@ -590,7 +582,7 @@
     <button class="btn" id="btn" aria-label="Press"><span class="cap"></span></button>
   </div>
 
-  <div class="hint" id="hint">press it. keep a steady rhythm.</div>
+  <div class="hint" id="hint">press it. or tap space.</div>
 </main>
 
 <div class="over" id="over" aria-live="polite">
@@ -702,12 +694,12 @@
 
   // per-press extras, stacking by tier
   function tierPress(t, h) {
-    if (t === 7 && !rapid) {
+    if (t === 7 && !rapid && runTier < 13) {
       const k = (count - tierCount(6)) / (tierCount(7) - tierCount(6));     // 0 → 1 as the hole gets close
       heartbeat(0.35 + k * 0.65);
       if (!reduce) stage.animate([{ scale: `${1.015 + k * 0.03}` }, { scale: '1' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', composite: 'add' });
     }
-    if (t >= 13) { noticePress(); return; }       // quiet. no layers
+    if (t >= 13) { noticePress(); if (!echoTier) return; t = echoTier; }   // quiet, until it isn't
     if (t === 12) implode();
     if (t >= 2 && !rapid) subKick();
     if (t >= 3) { if (!rapid) sparkleArp(count); shockwave(t); }
@@ -787,10 +779,11 @@
     'one of these is the one.', 'your best score doesn’t matter here.', 'nobody remembers the number.',
     'it’s been rigged since you started. a little.', 'the button doesn’t like being pressed.',
     'it lets you get this far on purpose.', 'stopping is also a choice.', 'it counts too. differently.',
-    'this run is already over. you just haven’t seen it yet.', 'the rhythm won’t save you here.',
+    'this run is already over. you just haven’t seen it yet.', 'luck won’t save you here.',
     'it doesn’t want you to beat this.', 'how many more do you think you have?'
   ];
-  let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [], lastSaid = 0;
+  let noticeBase = 0, lineI = 0, nextLineAt = 0, lineBag = [], lastSaid = 0, echoTier = 0, watchAt = -1, drainAt = -1;
+  const fxT = () => runTier >= 13 ? echoTier : runTier;   // which tier's effects are showing
   function nextMoreLine() {
     if (!lineBag.length) lineBag = MORE_LINES.slice().sort(() => Math.random() - 0.5);  // no repeats until all are used
     return lineBag.pop();
@@ -812,7 +805,16 @@
     $('stage').querySelector('.well').style.scale = Math.max(0.5, 1 - k * 0.006);   // it backs away
     heartbeat(Math.min(1, 0.3 + k / 80));
     const calm = performance.now() - lastSaid > 8000;   // spam-clicking can't make it talk faster
+    if (watchAt >= 0 && k > watchAt) {
+      const e = Math.min(7, 1 + Math.floor((k - watchAt - 1) / 12));   // one tier back every 12 presses
+      if (e !== echoTier) { echoTier = e; document.body.classList.add('returning'); if (e === 7) drainAt = k; }
+    }
+    if (drainAt >= 0) {                     // then the colour slowly drains to black and white
+      const g = Math.min(1, (k - drainAt) / 100);
+      $('drain').style.backdropFilter = $('drain').style.webkitBackdropFilter = `grayscale(${g.toFixed(3)}) contrast(${(1 + g * 0.35).toFixed(3)})`;
+    }
     if (lineI < LINES.length && k >= lineI * 10 && calm) {
+      if (LINES[lineI] === 'i’ll just watch.') watchAt = k;
       say(LINES[lineI++]);
       if (lineI === LINES.length) nextLineAt = k + 30 + Math.floor(Math.random() * 16);
     } else if (lineI === LINES.length && k >= nextLineAt && calm) {
@@ -857,7 +859,6 @@
     count = 0;
     alive = true;
     numEl.getAnimations().forEach(a => a.cancel());
-    rhythm = 0; rhythmAvg = 0; rhythmEl.className = 'rhythm'; rhythmEl.textContent = '';
     numEl.textContent = '0';
     heatTarget = 0;
     frozen = false;
@@ -870,7 +871,9 @@
     singularity(false);
     document.body.classList.remove('white', 'rewind', 'notice', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9');
     voidCv.style.transform = '';
-    rewindBase = 0; noticeBase = 0;
+    rewindBase = 0; noticeBase = 0; echoTier = 0; watchAt = -1; drainAt = -1;
+    $('drain').style.backdropFilter = $('drain').style.webkitBackdropFilter = '';
+    document.body.classList.remove('returning');
     document.querySelector('.well').style.scale = '';
     $('whisper').getAnimations().forEach(a => a.cancel());
     $('whisper').textContent = '';
@@ -885,31 +888,15 @@
   }
 
   let pendingDeath = null, immortal = false, incognito = false, debugRun = false, lastPress = 0, rapid = false;
-  // rhythm: steady presses build a streak that slows how fast the risk climbs
-  let rhythm = 0, rhythmAvg = 0;
-  const rhythmEl = $('rhythm');
-  function updateRhythm(dt) {
-    const steady = rhythm > 0 && dt < 1500 && dt > rhythmAvg * 0.6 && dt < rhythmAvg * 1.5;
-    if (steady) { rhythm++; rhythmAvg = rhythmAvg * 0.8 + dt * 0.2; }
-    else {
-      if (rhythm >= 8) { rhythmEl.textContent = 'rhythm lost'; rhythmEl.className = 'rhythm on'; }
-      rhythm = dt < 1500 ? 1 : 0; rhythmAvg = dt;
-    }
-    if (rhythm >= 8) {
-      rhythmEl.textContent = `rhythm ${rhythm}`;
-      rhythmEl.className = 'rhythm on' + (rhythm >= 30 ? ' hot' : '');
-    } else if (rhythm < 3 && rhythmEl.textContent !== 'rhythm lost') rhythmEl.className = 'rhythm';
-  }
   function press() {
     if (pendingDeath) { clearTimeout(pendingDeath.timer); const { d } = pendingDeath; pendingDeath = null; die(d); return; }
     if (!alive) return;
     const nowT = performance.now();
     rapid = nowT - lastPress < 80;
-    if (count > 0) updateRhythm(nowT - lastPress);
     lastPress = nowT;
     count++;
     numEl.textContent = shownCount();
-    heatTarget = runTier >= 13 ? 0 : heatFor(count);
+    heatTarget = runTier >= 13 ? echoTier * 0.13 : heatFor(count);
     const h = heatTarget;
     if (best > 0 && count > best) {
       bestLive.textContent = 'new best';
@@ -925,17 +912,19 @@
     if (t > runTier) tierUp(t);
     tierPress(runTier, h);
     pressPulse = 1;
-    if (runTier >= 2 && runTier < 13) zoomTrail(runTier, h);
-    if (runTier >= 3 && runTier < 13) hitStopUntil = performance.now() + 30 + runTier * 6;
-    const surge = Math.min(1.5, Math.max(0, count - runBest) / 70);
-    if (runTier < 13) { burst(h, runTier, surge); kick(h, surge); }
+    const ft = fxT();
+    if (ft >= 2) zoomTrail(ft, h);
+    if (ft >= 3) hitStopUntil = performance.now() + 30 + ft * 6;
+    const surge = runTier >= 13 ? 0 : Math.min(1.5, Math.max(0, count - runBest) / 70);
+    if (runTier < 13 || echoTier) { burst(h, ft, surge); kick(h, surge); }
     updateRing();
     if (navigator.vibrate) navigator.vibrate(6);
     if (count === 1) { hint.style.opacity = 0; $('title').classList.add('gone'); }
     publish('press');
 
-    const steadiness = Math.max(0.3, 1 / (1 + rhythm / 30));   // 1 = no streak, 0.3 = deep in the groove
-    risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, steadiness) ? BIG_JUMP * steadiness : tinyJump() * steadiness;
+    // the climb eases off the longer you last, so the deep milestones are rare but reachable
+    const ease = Math.max(0.3, 1 / (1 + count / 30));
+    risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
     risk = Math.min(MAX_RISK, Math.max(MIN_RISK, risk));
 
     if (!immortal && Math.random() < risk) {
@@ -1120,8 +1109,8 @@
   function postFx() {
     pressPulse *= 0.86;
     if (reduce) { stage.style.filter = warping ? 'url(#warp)' : ''; return; }
-    const live = alive && !frozen && runTier < 13;
-    const t = live ? runTier : 0, hh = live ? heat : 0, pp = live ? pressPulse : 0;
+    const live = alive && !frozen && (runTier < 13 || echoTier > 0);
+    const t = live ? fxT() : 0, hh = live ? heat : 0, pp = live ? pressPulse : 0;
     const f = [];
     // the black hole (tier 8) is the climax: it gets the screen to itself, then the heavy lens
     // effects come back harder afterwards. before it, everything stays a notch below it.
@@ -1179,7 +1168,7 @@
       ? `translate(${(Math.random() - 0.5) * amp}px, ${(Math.random() - 0.5) * amp}px) rotate(${(Math.random() - 0.5) * h * 5}deg)`
       : '';
     numEl.style.color = heat ? `color-mix(in oklab, var(--ink), var(--red-hi) ${Math.round(heat * 100)}%)` : '';
-    if (runTier >= 7 && alive && !reduce) {
+    if (fxT() >= 7 && alive && !reduce) {
       const o = 2 + Math.random() * 5 * heat;
       numEl.style.textShadow = `${-o}px 0 rgba(255,0,70,0.85), ${o}px 0 rgba(0,220,255,0.85), 0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})`;
     } else numEl.style.textShadow = heat ? `0 0 ${heat * 48}px rgba(255, 75, 62, ${heat * 0.7})` : '';
@@ -1187,9 +1176,9 @@
     vignette.style.opacity = heat * 0.9;
     aura.style.opacity = heat * (0.75 + Math.sin(performance.now() / (260 - heat * 140)) * 0.25);
     if (alive && !frozen && !reduce) {
-      if (runTier >= 2 && runTier < 13 && Math.random() < 0.08 * Math.min(runTier, 8)) ember();
+      if (fxT() >= 2 && Math.random() < 0.08 * Math.min(fxT(), 8)) ember();
       echoes();
-      if (runTier >= 4) vignette.style.filter = `hue-rotate(${(performance.now() / 30) % 360}deg)`;
+      if (fxT() >= 4) vignette.style.filter = `hue-rotate(${(performance.now() / 30) % 360}deg)`;
     }
     requestAnimationFrame(heatLoop);
   }
@@ -1237,7 +1226,7 @@
   // major pentatonic climbing; wraps up an octave so long runs stay musical
   const SCALE = [0, 2, 4, 7, 9];
   function click(n, h = 0) {
-    if (!ac || runTier >= 13) return;
+    if (!ac || (runTier >= 13 && !echoTier)) return;
     if (runTier === 12) { reverseClick(n); return; }
     const t = ac.currentTime;
     const step = (n - 1) % 15;
@@ -1644,6 +1633,10 @@
   }
   // red → amber → gold → white-hot on the way to the hole; violet → cyan inside it; then it keeps drifting
   function palette() {
+    if (runTier >= 13 && echoTier) {          // the echo warms back up from red
+      const k = echoTier / 7;
+      return [-14, 0, 14].map((d, i) => `hsl(${(6 + k * 46 + d + 360) % 360}, ${100 - k * 30}%, ${Math.min(95, 62 + k * k * 30 + (i - 1) * 8)}%)`);
+    }
     const lerp = (a, b, k) => a + (b - a) * Math.min(1, Math.max(0, k));
     const eh = tierCount(7), sg = tierCount(8);
     let hue, sat, lit;
@@ -1686,7 +1679,7 @@
       cx.globalAlpha = k;
       cx.fillStyle = p.col;
       cx.beginPath();
-      if (runTier >= 4 && alive) {             // motion-blurred streaks instead of dots
+      if (fxT() >= 4 && alive) {               // motion-blurred streaks instead of dots
         cx.strokeStyle = p.col; cx.lineWidth = p.r * dpr * (0.4 + 0.6 * k); cx.lineCap = 'round';
         cx.moveTo(p.x * dpr, p.y * dpr); cx.lineTo((p.x - p.vx * 4) * dpr, (p.y - p.vy * 4) * dpr); cx.stroke();
         cx.beginPath();
@@ -2093,7 +2086,9 @@
     },
     risk(p) { if (p !== undefined) { risk = Math.min(MAX_RISK, Math.max(MIN_RISK, p)); dbgTag(); } return fmtPct(risk); },
     die() { if (alive) { alive = false; dbgTag(); die(drama(count)); } },
-    help() { return 'onemore.incognito(on?), .immortal(on?), .skip(n), .to(name|number), .risk(p?), .die()'; }
+    // in the talking stage: skip ahead to "i'll just watch" (the echo starts right after)
+    watch() { if (runTier < 13) return 'reach it notices you first: onemore.to(13)'; lineI = LINES.indexOf('i’ll just watch.'); lastSaid = -1e9; noticeBase = count - lineI * 10; return 'next press says it'; },
+    help() { return 'onemore.incognito(on?), .immortal(on?), .skip(n), .to(name|number), .watch(), .risk(p?), .die()'; }
   };
   window.__onemore = window.onemore;
 })();
