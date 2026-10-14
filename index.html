@@ -269,18 +269,20 @@
   .leak {
     position: fixed; inset: -20%; pointer-events: none; opacity: 0; z-index: 3; mix-blend-mode: screen;
     background: radial-gradient(40% 30% at 30% 40%, rgba(255,150,80,0.55), transparent 70%), radial-gradient(30% 25% at 75% 70%, rgba(255,90,140,0.35), transparent 70%);
-    animation: leak 14s ease-in-out infinite alternate;
+    transition: opacity 2.4s ease;
+    will-change: transform, opacity;
   }
-  @keyframes leak { from { transform: translate(-8%, -4%) rotate(-4deg); } to { transform: translate(8%, 5%) rotate(5deg); } }
   /* god rays behind the button (from "absurd") */
   .rays {
     position: absolute; inset: -140px; border-radius: 50%; pointer-events: none; opacity: 0;
     background: repeating-conic-gradient(from 0deg, rgba(255,220,170,0.22) 0deg 6deg, transparent 6deg 18deg);
     -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 70%); mask-image: radial-gradient(circle, #000 25%, transparent 70%);
     animation: spin 40s linear infinite; mix-blend-mode: screen;
+    transition: opacity 1.6s ease;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   /* depth of field: the scene's edges go soft (from "mythical") */
+  .best, .hint, .rhythm, h1, .tagline { transition: filter 1.2s ease, color 300ms ease, opacity 300ms ease; }
   .dof h1, .dof .tagline, .dof .best, .dof .hint, .dof .rhythm { filter: blur(1.4px); }
   /* the other side: a white hole. everything flips */
   body.white { background: #f3efe8; }
@@ -1074,7 +1076,7 @@
   let heatTarget = 0, heat = 0, frozen = false;
   const vignette = $('vignette'), aura = $('aura');
   // ---- post-processing: lens, camera, film. each tier changes how the screen is *shot*, not just its colors
-  let lastFilter = '', pressPulse = 0, hitStopUntil = 0, tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
+  let leakAngle = 0, lastFilter = '', pressPulse = 0, hitStopUntil = 0, tiltX = 0, tiltY = 0, tiltTX = 0, tiltTY = 0;
   const grainEl = $('grain'), scanEl = $('scan');
   // a few frames of film grain, generated once
   const grainFrames = Array.from({ length: 4 }, () => {
@@ -1138,7 +1140,14 @@
     $('hazeMap').setAttribute('scale', haze.toFixed(1));
     if (haze) $('hazeTurb').setAttribute('seed', (performance.now() / 90 | 0) % 100);
     numEl.style.filter = haze ? 'url(#haze)' : '';
-    $('leak').style.opacity = pre && t >= 3 ? 0.35 + hh * 0.2 : 0;                    // light leak ("on fire")
+    // light leak ("on fire"): fades in, and the blobs orbit faster the higher the count
+    const leakOn = pre && t >= 3;
+    $('leak').style.opacity = leakOn ? 0.35 + hh * 0.2 : 0;
+    if (leakOn || +getComputedStyle($('leak')).opacity > 0.01) {
+      leakAngle += 0.04 + Math.max(0, count - tierCount(2)) * 0.006;          // deg per frame
+      const breathe = 1 + Math.sin(performance.now() / 1700) * 0.06;
+      $('leak').style.transform = `rotate(${leakAngle.toFixed(2)}deg) scale(${breathe.toFixed(3)})`;
+    }
     stage.style.translate = pre && t >= 4                                             // gate weave ("unhinged")
       ? `${(Math.sin(performance.now() / 310) * 1.6).toFixed(2)}px ${(Math.sin(performance.now() / 470) * 1.2).toFixed(2)}px` : '';
     $('rays').style.opacity = pre && t >= 5 ? 0.6 + pp * 0.4 : 0;                     // god rays ("absurd")
