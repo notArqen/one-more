@@ -2550,12 +2550,18 @@
       ct.style.textShadow = h ? `0 0 ${h * 28}px rgba(255, 75, 62, ${h * 0.7})` : '';
       cap.style.boxShadow = h ? `0 0 ${10 + h * 30}px rgba(255, 75, 62, ${0.3 + h * 0.5})` : '';
       // the well's rim reads their best at a glance: dull for small, hot and blooming for big
-      const lvl = Math.min(1, Math.log((g.best || 0) + 1) / Math.log(150));
-      const col = `hsl(${30 - lvl * 70}, ${8 + lvl * 92}%, ${42 + lvl * 26}%)`;
+      // no colour → bland → warm → intense, never off into pinks: hue stays in the fire range
+      const lvl = Math.min(1, Math.log((g.best || 0) + 1) / Math.log(400));
+      const k = x => Math.min(1, Math.max(0, x));
+      let col, bloom = 0;
+      if (lvl < 0.3) col = `rgba(255,255,255,${(0.06 + lvl * 0.2).toFixed(2)})`;                       // just a faint rim
+      else if (lvl < 0.55) { const t = k((lvl - 0.3) / 0.25); col = `hsl(32, ${8 + t * 14}%, ${38 + t * 6}%)`; }  // bland
+      else if (lvl < 0.8) { const t = k((lvl - 0.55) / 0.25); col = `hsl(${32 - t * 10}, ${25 + t * 50}%, ${45 + t * 8}%)`; bloom = t * 0.4; }
+      else { const t = k((lvl - 0.8) / 0.2); col = `hsl(${22 - t * 14}, ${80 + t * 20}%, ${54 + t * 14}%)`; bloom = 0.4 + t * 0.6; }   // intense
       const well = g.querySelector('.gwell');
-      well.style.boxShadow = `inset 0 3px 8px rgba(0,0,0,0.8), 0 0 0 ${2 + lvl * 2}px ${col}, 0 0 ${lvl * lvl * 36}px ${lvl * 6}px ${col}`;
-      well.style.filter = lvl > 0.5 ? `contrast(${1 + (lvl - 0.5) * 0.6}) saturate(${1 + lvl})` : '';
-      const sh = reduce || lvl < 0.6 ? 0 : (lvl - 0.6) * 3;
+      well.style.boxShadow = `inset 0 3px 8px rgba(0,0,0,0.8), 0 0 0 ${2 + lvl * 2}px ${col}` + (bloom ? `, 0 0 ${bloom * 36}px ${bloom * 6}px ${col}` : '');
+      well.style.filter = lvl > 0.8 ? `contrast(${1 + (lvl - 0.8) * 1.5})` : '';
+      const sh = reduce || lvl < 0.85 ? 0 : (lvl - 0.85) * 12;
       well.style.translate = sh ? `${(Math.random() - 0.5) * sh}px ${(Math.random() - 0.5) * sh}px` : '';
     }
     requestAnimationFrame(ghostLoop);
