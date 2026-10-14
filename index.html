@@ -134,7 +134,7 @@
   /* red wash + aura; opacity driven from js by heat */
   .vignette {
     position: fixed; inset: 0; pointer-events: none; opacity: 0;
-    background: radial-gradient(90% 70% at 50% 50%, transparent 40%, rgba(255, 60, 40, 0.35));
+    background: radial-gradient(90% 70% at 50% 50%, transparent 35%, rgba(255, 60, 40, 0.5));
   }
   .aura {
     position: absolute; inset: -60px; border-radius: 50%; pointer-events: none; opacity: 0;
@@ -784,6 +784,33 @@
     publish('tier');
   }
 
+  function newBestMoment() {
+    const b = $('banner'), ti = $('title');
+    b.textContent = 'new territory';
+    b.style.top = (ti.offsetTop + ti.offsetHeight / 2 - b.offsetHeight / 2) + 'px';
+    b.animate([
+      { opacity: 0, transform: 'translateX(-50%) translateY(8px) scale(0.92)', filter: 'blur(4px)' },
+      { opacity: 1, transform: 'translateX(-50%) scale(1)', filter: 'blur(0)', offset: 0.15 },
+      { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.75 },
+      { opacity: 0, transform: 'translateX(-50%) translateY(-6px) scale(1.02)' }
+    ], { duration: 1800, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+    if (ac) {                                         // a bright major lift
+      const t = ac.currentTime;
+      [0, 4, 7, 12, 16].forEach((semi, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), st = t + i * 0.05;
+        o.type = 'triangle'; o.frequency.value = 440 * Math.pow(2, semi / 12);
+        g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.08, st + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.9);
+        o.connect(g).connect(ac.destination); o.start(st); o.stop(st + 0.95);
+      });
+    }
+    spawn(70, 6, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 70, 0.03);
+    if (!reduce) {
+      vignette.animate([{ opacity: 1 }, { opacity: heatFor(count) * 0.9 }], { duration: 900, easing: 'ease-out' });
+      $('flash').animate([{ opacity: 0.35 }, { opacity: 0 }], { duration: 500, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+    }
+  }
+
   function renderTiers() {
     // only what you've found. no hint of how deep it goes
     $('tiers').innerHTML = TIERS.slice(0, discovered).map((tr, i) =>
@@ -1013,6 +1040,7 @@
     click(count, h);
     if (count % 10 === 0 && runTier < 13) chord(0.5);
     if (count % 10 === 0 && runTier === 16) klaxon();      // every ten gets a little chime
+    if (runBest > 0 && count === runBest + 1 && runTier < 13) newBestMoment();
     const cyc = cycleAt(count);
     if (cyc > runCycle) newLap(cyc);
     const t = tierAt(count);

@@ -29,6 +29,7 @@ Writing rules: no random effects that aren't tied to progress. Undiscovered tier
 
 | Milestone | At | What changes |
 | --- | --- | --- |
+| (passing your best) | your best + 1 | "new territory" banner, major-chord lift, particle burst, vignette surge |
 | warming up | 15 | Number heat, first particles |
 | heating up | 30 | Heat haze on the number, zoom blur, embers |
 | on fire | 45 | Light leaks fade in and orbit (faster with count), hit-stop, shockwaves, sparkle sounds |
