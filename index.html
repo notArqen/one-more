@@ -304,7 +304,23 @@
   body.rewind .stage { animation: rwobble 2.4s ease-in-out infinite; }
   @keyframes rwobble { 0%, 100% { skew: 0deg; } 50% { skew: -1.5deg; } }
   /* it notices you: everything goes quiet */
-  body.notice { background: #0d0b0a; cursor: crosshair; }
+  body.notice { background: #000; cursor: crosshair; }
+  body.notice .well { background: #000; box-shadow: none; }
+  /* the longer you stay, the more of the stylesheet quietly stops applying */
+  body.b1 .count { font-family: "Times New Roman", serif; }
+  body.b2 .cap { background: #c8352b; box-shadow: none; }
+  body.b3 .cap, body.b3 .btn::before, body.b3 .well { border-radius: 0; }
+  body.b4 .count { align-self: flex-start; letter-spacing: normal; font-weight: 400; }
+  body.b5 .well { background: none; outline: 1px solid #333; }
+  body.b5 .ring { transform: rotate(-90deg) translate(7px, -4px); }
+  body.b6 .best, body.b6 .hint, body.b6 .rhythm, body.b6 .whisper { font: 16px "Times New Roman", serif; letter-spacing: normal; text-transform: none; }
+  body.b7 .whisper { left: 0; transform: none; text-align: left; }
+  body.b7 .tab { appearance: auto; -webkit-appearance: auto; background: buttonface; border-radius: 0; }
+  body.b8 *, body.b8 *::before { transition: none !important; }
+  body.b8 .stage { outline: 1px dashed #f00; }
+  body.b8 .btn::before { transform: translateY(9px) translateX(5px); }
+  body.b9 * { font-family: monospace !important; }
+  body.b9 .cap { background: #808080; }
   body.notice .count span { color: var(--ink) !important; text-shadow: none !important; -webkit-text-stroke: 0; }
   body.notice .vignette, body.notice .aura, body.notice .rays, body.notice .leak, body.notice .grain, body.notice .scan { opacity: 0 !important; }
   body.notice .btn { cursor: crosshair; }
@@ -611,19 +627,19 @@
   // ---- tiers: hidden layers that only exist far past your best -------------
   // each one adds a sound and a visual you've never seen until you get there
   const TIERS = [
-    { at: 10,  name: 'warming up' },
-    { at: 20,  name: 'heating up' },
-    { at: 30,  name: 'on fire' },
-    { at: 42,  name: 'unhinged' },
-    { at: 55,  name: 'absurd' },
-    { at: 68,  name: 'mythical' },
-    { at: 82,  name: 'reality bends' },
-    { at: 100, name: 'event horizon' },
-    { at: 118, name: 'singularity' },
-    { at: 135, name: 'heat death' },
-    { at: 155, name: 'the other side' },
-    { at: 178, name: 'rewind' },
-    { at: 205, name: 'it notices you' }
+    { at: 15,  name: 'warming up' },
+    { at: 30,  name: 'heating up' },
+    { at: 45,  name: 'on fire' },
+    { at: 63,  name: 'unhinged' },
+    { at: 83,  name: 'absurd' },
+    { at: 102, name: 'mythical' },
+    { at: 123, name: 'reality bends' },
+    { at: 150, name: 'event horizon' },
+    { at: 168, name: 'singularity' },
+    { at: 185, name: 'heat death' },
+    { at: 205, name: 'the other side' },
+    { at: 228, name: 'rewind' },
+    { at: 255, name: 'it notices you' }
   ];
   // milestones are fixed counts (a lucky first run can still see the black hole), but every new
   // record nudges all of them a few presses further out
@@ -744,8 +760,12 @@
     voidCv.style.transform = '';
     say(LINES[lineI++]);
   }
+  const BREAKS = [8, 16, 24, 32, 40, 48, 58, 70, 85];
   function noticePress() {
     const k = count - noticeBase;
+    BREAKS.forEach((at, i) => document.body.classList.toggle('b' + (i + 1), k >= at));
+    // near the end the counter occasionally fails to render
+    if (k >= BREAKS[8] && k % 7 === 0) { numEl.textContent = 'undefined'; setTimeout(() => { if (alive) numEl.textContent = shownCount(); }, 160); }
     $('stage').querySelector('.well').style.scale = Math.max(0.5, 1 - k * 0.006);   // it backs away
     heartbeat(Math.min(1, 0.3 + k / 80));
     if (k > 0 && k % 6 === 0 && lineI < LINES.length) say(LINES[lineI++]);
@@ -797,7 +817,7 @@
     vignette.style.filter = '';
     closeVoid(false);
     singularity(false);
-    document.body.classList.remove('white', 'rewind', 'notice');
+    document.body.classList.remove('white', 'rewind', 'notice', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9');
     voidCv.style.transform = '';
     rewindBase = 0; noticeBase = 0;
     document.querySelector('.well').style.scale = '';
