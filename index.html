@@ -306,11 +306,23 @@
   body.rewind .stage { animation: rwobble 2.4s ease-in-out infinite; }
   @keyframes rwobble { 0%, 100% { skew: 0deg; } 50% { skew: -1.5deg; } }
   /* it notices you: everything goes quiet */
-  body.notice { background: #000; cursor: crosshair; }
+  /* deadpan: true black, no colour, no glow. it isn't performing anymore */
+  html:has(body.notice), body.notice { background: #000 !important; cursor: crosshair; transition: none; }
+  body.notice .cap, body.notice .btn::before { transition: none; }
   body.notice .well { background: #000; box-shadow: none; }
+  body.notice .btn::before { background: #2a2a2a; box-shadow: none; }
+  body.notice .cap { background: #141414; box-shadow: inset 0 0 0 1px #5a5a5a; filter: none !important; }
+  body.notice .btn.down .cap { background: #1c1c1c; }
+  body.notice .ring .track { stroke: rgba(255,255,255,0.08); }
+  body.notice .ring .fill { stroke: rgba(255,255,255,0.35) !important; filter: none !important; }
+  body.notice .count span { color: #e6e6e6 !important; }
+  body.notice .best, body.notice .best.beating { color: #555 !important; }
+  body.notice .rhythm { opacity: 0 !important; }
+  body.notice .whisper { color: #bdbdbd; }
+  body.notice .ghosts { opacity: 0.25; filter: grayscale(1); }
   /* the longer you stay, the more of the stylesheet quietly stops applying */
   body.b1 .count { font-family: "Times New Roman", serif; }
-  body.b2 .cap { background: #c8352b; box-shadow: none; }
+  body.b2 .cap { box-shadow: inset 0 0 0 1px #5a5a5a, 3px 2px 0 -1px #5a5a5a; }
   body.b3 .cap, body.b3 .btn::before, body.b3 .well { border-radius: 0; }
   body.b4 .count { align-self: flex-start; letter-spacing: normal; font-weight: 400; }
   body.b5 .well { background: none; outline: 1px solid #333; }
