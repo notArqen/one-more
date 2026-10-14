@@ -106,7 +106,7 @@ Acts I–II up to **the other side**, then it laps: event horizon → singularit
 
 ## Saves
 
-Each mode has one JSON save (`onemore.save.<mode>`); modes never share progress. A global save (`onemore.save`) holds the name, last room, last mode and lifetime presses. Saves from before the mode picker (one key per value) are copied over on first load, and the old keys are left as they were. **Erase progress** wipes only the current mode. **Export save** gives a code (or a .json download) with every mode's save; **Import save** takes either, checks it, shows what it would replace, and asks before overwriting. The room code is never exported.
+Each mode has one JSON save (`onemore.save.<mode>`); modes never share progress. Versus keeps its own (`onemore.save.competitive`: best, history, rounds played and won), and Endless/Versus also store each Duo player's best. A global save (`onemore.save`) holds the name, last room, last mode and lifetime presses. Saves from before the mode picker (one key per value) are copied over on first load, and the old keys are left as they were. **Erase progress** wipes only the current mode. **Export save** gives a code (or a .json download) with every mode's save; **Import save** takes either, checks it, shows what it would replace, and asks before overwriting. The room code is never exported.
 
 ## Debug console
 

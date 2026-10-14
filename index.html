@@ -417,7 +417,7 @@
   .modes button:focus-visible { outline: 2px solid rgba(255,138,107,0.6); }
   .modes small { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 1px; }
   .modes-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 4); border-radius: 9px; background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); transition: transform 220ms var(--ease-out); }
-  .modes.locked [data-mode="story"] { opacity: 0.38; cursor: not-allowed; }
+  .modes.locked [data-mode="story"], .modes.solo [data-mode="competitive"] { opacity: 0.38; cursor: not-allowed; }
   .mode-note { margin-top: -6px; }
   .saves { border-top: 1px solid var(--panel-line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
   .save-box { display: flex; flex-direction: column; gap: 8px; }
@@ -612,6 +612,43 @@
   .pill:active { transform: scale(0.97); }
   .pill:disabled { opacity: 0.4; cursor: default; }
   .status { font-size: 12px; color: var(--muted); min-height: 1.3em; }
+  /* versus */
+  .vs-panel { display: flex; flex-direction: column; gap: 10px; }
+  .vs-panel[hidden], .vs-host[hidden] { display: none; }
+  .vs-host { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); }
+  .vs-scale { display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: var(--muted); }
+  .vs-scale b { color: var(--ink); font-size: 14px; }
+  .vs-scale small { margin-left: auto; font-size: 12px; }
+  #vsScale { width: 100%; accent-color: var(--red); }
+  .vs-opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+  .vs-opt small { color: var(--muted); font-size: 11px; }
+  .vs-opt select { font: inherit; color: var(--ink); background: var(--bg, #120f0c); border: 1px solid var(--panel-line); border-radius: 8px; padding: 3px 6px; }
+  .vs-table { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .vs-table li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; background: var(--field); }
+  .vs-table li.me { box-shadow: inset 0 0 0 1px rgba(255,138,107,0.45); }
+  .vs-table .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vs-table .pts { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .vs-table .spark { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+  .vs-table .spark i { width: 4px; min-height: 2px; border-radius: 1px; background: rgba(138,123,107,0.5); }
+  .vs-table .spark i.w { background: var(--red-hi); }
+  .vs-table .empty { display: block; color: var(--muted); background: none; padding: 0; }
+  .vs-go { position: fixed; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); translate: -50% 0; z-index: 3; flex: none; padding: 12px 26px; font-weight: 700; }
+  .vs-go[hidden] { display: none; }
+  .vs-count { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; pointer-events: none; font-size: clamp(120px, 30vw, 260px); font-weight: 800; letter-spacing: -0.04em; color: var(--ink); text-shadow: 0 0 60px rgba(255, 90, 60, 0.5); opacity: 0; }
+  .vs-card { min-width: min(380px, calc(100vw - 32px)); text-align: left; }
+  .vs-card .label { text-align: center; }
+  .vs-card .final { text-align: center; font-size: 40px; }
+  .vs-places { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .vs-places li { display: grid; grid-template-columns: 34px 1fr auto; align-items: baseline; gap: 8px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.03); }
+  .vs-places li.me { box-shadow: inset 0 0 0 1px rgba(255,138,107,0.5); }
+  .vs-places .pl { font-weight: 800; color: var(--muted); }
+  .vs-places .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vs-places .ct { font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .vs-places .gap { grid-column: 2 / 4; font-size: 12px; color: var(--muted); margin-top: -2px; }
+  .vs-mine { margin-top: 12px; font-size: 13px; color: var(--muted); line-height: 1.6; text-align: center; }
+  .vs-mine b { color: var(--ink); }
+  .vs-card h3 { margin: 16px 0 8px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); font-weight: 600; text-align: center; }
+  .vs-wait { text-align: center; font-size: 13px; color: var(--muted); margin-top: 16px; }
   .status b { color: var(--ink); letter-spacing: 0.15em; }
   .status small { display: block; margin-top: 4px; font-size: 11px; line-height: 1.45; opacity: 0.85; }
   .players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; }
@@ -672,7 +709,7 @@
     <span class="modes-pill" id="modesPill"></span>
     <button role="radio" data-mode="endless">Endless</button>
     <button role="radio" data-mode="story">Story</button>
-    <button role="radio" data-mode="competitive" disabled>Versus<small>soon</small></button>
+    <button role="radio" data-mode="competitive">Versus</button>
     <button role="radio" data-mode="autofarm" disabled>Autofarm<small>soon</small></button>
   </div>
   <p class="fine mode-note" id="modeNote"></p>
@@ -703,6 +740,18 @@
   </div>
   <button class="pill quiet" id="leave" style="display:none;flex:none">Leave room</button>
   <div class="status" id="status">same code, same room. peer to peer.</div>
+  <div class="vs-panel" id="vsPanel" hidden>
+    <div class="vs-host" id="vsHost" hidden>
+      <div class="vs-scale"><span>Scale</span><b id="vsScaleName">Standard</b><small id="vsScaleTyp"></small></div>
+      <input type="range" id="vsScale" min="0" max="4" step="1" value="2" aria-label="Round length">
+      <label class="vs-opt"><input type="checkbox" id="vsFair"> Fair luck <small>same big jumps for everyone</small></label>
+      <label class="vs-opt">First to <select id="vsFirst"><option value="0">no limit</option><option>30</option><option>50</option><option>100</option></select> points</label>
+      <div class="row2"><button class="pill" id="vsStart">Start round</button><button class="pill quiet" id="vsEnd" disabled>End round</button></div>
+    </div>
+    <p class="fine" id="vsInfo"></p>
+    <h3>session</h3>
+    <ol class="vs-table" id="vsTable"></ol>
+  </div>
   <ul class="players" id="players"></ul>
   </div>
   <div class="saves">
@@ -787,6 +836,20 @@
   </div>
 </div>
 
+<button class="pill vs-go" id="vsGo" hidden>Start round</button>
+<div class="vs-count" id="vsCount" aria-live="assertive"></div>
+<div class="over" id="vsOver" aria-live="polite">
+  <div class="card vs-card">
+    <div class="label" id="vsRoundLabel">round</div>
+    <div class="final" id="vsHeadline"></div>
+    <ol class="vs-places" id="vsPlaces"></ol>
+    <div class="vs-mine" id="vsMine"></div>
+    <h3 id="vsSessionLabel">session</h3>
+    <ol class="vs-table" id="vsTable2"></ol>
+    <div class="again-row" id="vsHostRow"><button class="again" id="vsNext">Next round</button></div>
+    <div class="vs-wait" id="vsWait">waiting for the host to start the next round…</div>
+  </div>
+</div>
 <div class="over" id="over" aria-live="polite">
   <div class="card">
     <div class="label">that was the one</div>
@@ -841,12 +904,13 @@
   // modes never share progress. debug and incognito runs never write.
   const SAVE_V = 1;
   const MODES = ['endless', 'story', 'competitive', 'autofarm'];
-  const BUILT = ['endless', 'story'];
+  const BUILT = ['endless', 'story', 'competitive'];
   const int = (v, max = 1e9) => { v = Math.floor(+v); return Number.isFinite(v) && v > 0 ? Math.min(v, max) : 0; };
   function cleanMode(m, o) {          // also validates imports: anything odd falls back to zero
     o = o && typeof o === 'object' ? o : {};
     const c = { best: int(o.best), tiers: int(o.tiers, 99), drift: int(o.drift, 1e6),
       runs: (Array.isArray(o.runs) ? o.runs : []).map(v => int(v)).slice(-14) };
+    if (m === 'competitive') { c.rounds = int(o.rounds); c.wins = int(o.wins); }
     if (m !== 'story') c.duo = { best: [0, 1].map(i => int(o.duo?.best?.[i])) };
     if (m === 'story') {
       c.act = int(o.act, 9); c.pity = int(o.pity, 1e6); c.actAt = {};
@@ -857,7 +921,7 @@
   function cleanGlobal(o) {
     o = o && typeof o === 'object' ? o : {};
     return { v: SAVE_V, name: typeof o.name === 'string' ? o.name.slice(0, 16) : '', room: typeof o.room === 'string' ? o.room.replace(/[^A-Z0-9]/g, '').slice(0, 6) : '',
-      mode: BUILT.includes(o.mode) ? o.mode : 'endless', presses: int(o.presses, 1e12) };
+      mode: ['endless', 'story'].includes(o.mode) ? o.mode : 'endless', presses: int(o.presses, 1e12) };
   }
   const readJSON = k => { try { return JSON.parse(store.get(k)); } catch { return null; } };
   // one-time copy from the old one-key-per-value saves. the old keys stay put, untouched.
@@ -1244,12 +1308,13 @@
   function press() {
     if (transit) return;
     if (pendingDeath) { clearTimeout(pendingDeath.timer); const { d } = pendingDeath; pendingDeath = null; die(d); return; }
-    if (!alive) return;
+    if (!alive || !canPress()) return;
     const nowT = performance.now();
     rapid = nowT - lastPress < 80;
     lastPress = nowT;
     count++;
     if (!debugRun) countPress();
+    if (mode === 'competitive') vsTrack(mainSt, nowT);
     numEl.textContent = shownCount();
     heatTarget = runTier >= 14 ? 0 : runTier >= 13 ? echoTier * 0.13 : heatFor(count);
     const h = heatTarget;
@@ -1282,9 +1347,12 @@
     publish('press');
 
     // the climb eases off the longer you last, so the deep milestones are rare but reachable
-    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.3 * pityK() : 1);
-    risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
-    risk = Math.min(story ? 0.012 * pityK() : MAX_RISK, Math.max(MIN_RISK, risk));   // story never climbs past 1.2%
+    if (mode === 'competitive') risk = stepRisk(risk, count, vs.k, mainRng);   // versus: the host's scale, maybe a shared seed
+    else {
+      const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.3 * pityK() : 1);
+      risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
+      risk = Math.min(story ? 0.012 * pityK() : MAX_RISK, Math.max(MIN_RISK, risk));   // story never climbs past 1.2%
+    }
 
     const fatal = Math.random() < risk && !(story && Math.random() < 0.5);   // story: half of all fatal rolls are forgiven
     if (!immortal && fatal) {
@@ -1295,7 +1363,7 @@
       frozen = true;
       if (d > 0.15) tension(d);
       pendingDeath = { d, timer: setTimeout(() => { pendingDeath = null; die(d); }, 240 + d * 760) };
-    }
+    } else if (mode === 'competitive') vsSurvived(mainSt, risk);
   }
 
   // how hard the fall is: barely anything for a short run, operatic once you're far past your best
@@ -1360,7 +1428,8 @@
     if (lastCheckpoint) $('againCpSub').textContent = `from act ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'][lastCheckpoint]} · ${ACTS[lastCheckpoint].name}`;
     renderTiers();
     if (runFresh.length) $('near').textContent = 'unlocked: ' + runFresh.map(n => TIERS[n - 1].name).join(', ');
-    publish('die', { odds: fmtPct(risk), record: isBest });
+    publish('die', { odds: fmtPct(risk), record: isBest, ...vsDone(mainSt, count, runTier) });
+    if (mode === 'competitive') { vsOut(); return; }
     setTimeout(() => { over.classList.add('show'); $(lastCheckpoint ? 'againCp' : 'again').focus({ preventScroll: true }); }, 480 + d * 1100);
   }
 
@@ -1579,6 +1648,7 @@
     if (duo.on) { duoKey(e); return; }
     if (e.code !== 'Space' || e.target.closest?.('input')) return;
     e.preventDefault();
+    if (vsOver.classList.contains('show')) { if (isHub) vsStartRound(); return; }
     if (over.classList.contains('show')) { if (lastCheckpoint) startFrom(lastCheckpoint); else reset(); return; }
     if (over.classList.contains('show') === false && !alive && !pendingDeath) return;
     if (spaceHeld) return;           // no autorepeat — every press is a choice
@@ -2783,7 +2853,8 @@
 
   // mode picker: one save per mode, swapped wholesale
   const modesEl = $('modes'), modeBtns = [...modesEl.querySelectorAll('button')];
-  const MODE_NOTES = { endless: 'the void loops, wilder every lap. rooms welcome.', story: 'the saga, with checkpoints and kinder odds. solo only.' };
+  const MODE_NOTES = { endless: 'the void loops, wilder every lap. rooms welcome.', story: 'the saga, with checkpoints and kinder odds. solo only.',
+    competitive: 'rounds against your room. the host starts each one.' };
   function paintModes() {
     modeBtns.forEach((b, i) => {
       const on = b.dataset.mode === mode;
@@ -2792,11 +2863,15 @@
       if (on) $('modesPill').style.transform = `translateX(${i * 100}%)`;
     });
     modesEl.classList.toggle('locked', !!room);
-    $('modeNote').textContent = room ? 'in a room: endless only. leave to play story.' : MODE_NOTES[mode] || '';
+    modesEl.classList.toggle('solo', !room);
+    $('modeNote').textContent = room && mode === 'endless' ? 'in a room: endless or versus. leave to play story.' : MODE_NOTES[mode] || '';
+    vsPaint();
   }
   function setMode(m, quiet) {
     if (!BUILT.includes(m)) return;
     if (m === 'story' && room) { toast('story is solo only · leave the room first'); return; }
+    if (m === 'competitive' && !room) { toast('versus needs a room · join one first'); return; }
+    if (m !== 'competitive' && vs.live) vsQuit();
     if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
     const changed = m !== mode;
     mode = m; story = m === 'story';
@@ -2819,7 +2894,7 @@
     const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
     if (!d) return;
     e.preventDefault();
-    const opts = BUILT.filter(m => !(m === 'story' && room));
+    const opts = BUILT.filter(m => !(m === 'story' && room) && !(m === 'competitive' && !room));
     const next = opts[(opts.indexOf(mode) + d + opts.length) % opts.length];
     setMode(next);
     modesEl.querySelector(`[data-mode="${next}"]`).focus();
@@ -2981,6 +3056,7 @@
   // a slow handshake isn't a broken one: after 6s of connecting, say why it might take a while
   let slowTimer = 0;
   function setStatus(html) {
+    setTimeout(vsPaint);                         // hosting can change with any status change
     statusEl.innerHTML = html;
     clearTimeout(slowTimer);
     if (html.endsWith('connecting…')) slowTimer = setTimeout(() => {
@@ -3078,6 +3154,9 @@
         hubLast = Date.now();
         if (msg && msg.t === 'state') onState(msg);
         else if (msg && msg.t === 'leave') dropPlayer(msg.uid);
+        else if (msg && msg.t === 'ping' && msg.now) vsClock(msg.now);
+        else if (msg && msg.t === 'round') vsRound(msg);
+        else if (msg && msg.t === 'end') vsEnd(msg);
       });
       conn.on('close', () => hubLost(p));
     });
@@ -3105,6 +3184,7 @@
   }
   function leaveRoom() {
     leaving = true; room = null;
+    if (mode === 'competitive') setMode('endless', true);
     paintModes();
     teardown();
     setJoined(false);
@@ -3120,7 +3200,7 @@
     if (!room || !peer) return;
     const now = Date.now();
     if (isHub) {
-      broadcast({ t: 'ping' });
+      broadcast({ t: 'ping', now: Date.now() });   // guests sync their round clock to this
       for (const c of [...conns.values()]) if (now - c.last > TIMEOUT) { c.conn.close(); guestGone(c.conn); }
     } else if (hubConn && hubConn.open) {
       hubConn.send({ t: 'ping' });
@@ -3136,6 +3216,7 @@
     if (st.uid === uid) return;
     const prev = others.get(st.uid);
     others.set(st.uid, st);
+    vsSeen(st);
     renderPlayers();
     const gh = ghosts.get(st.uid);
     if (gh) ghostFx(gh, st, prev);
@@ -3163,6 +3244,7 @@
     const st = others.get(id);
     if (!st) return;
     others.delete(id);
+    vsGone(id);
     toast(`${st.name} disconnected`, 'bad');
     renderPlayers();
   }
@@ -3293,7 +3375,7 @@
   // each half runs its own endless run: own risk, own death, own best. the main stage is parked
   const duoEl = $('duo'), duoOver = $('duoOver');
   const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  let canPress = () => true, vsStats = () => null, vsTrack = () => {}, vsSurvived = () => {}, vsDone = () => ({}), vsCheckEnd = () => {};
+
   const duo = { on: false, pads: [] };
   const DUO_KEYS = [['KeyA', 'Space'], ['KeyL', 'Enter', 'NumpadEnter']];
   const heatOf = (n, b) => { if (b <= 0) return 0; const o = n - b; if (o > 0) return 0.3 + 0.7 * (1 - Math.exp(-o / 12)); return -o <= LEAD_IN ? 0.06 * (LEAD_IN + 1 + o) : 0; };
@@ -3416,7 +3498,7 @@
       S.duo.best[p.i] = p.count; saveMode();
     }
     p.outEl.textContent = `out at ${p.count}` + (record ? ' · new best' : '');
-    publish('die', { record, ...vsDone(p.st, p.count) }, p);
+    publish('die', { record, ...vsDone(p.st, p.count, p.tier) }, p);
     if (vs.live) { vsCheckEnd(); return; }
     if (duo.pads.every(q => !q.alive && !q.pending)) setTimeout(showDuoOver, 700 + d * 600);
   }
@@ -3487,6 +3569,209 @@
   }
   duoToggle.addEventListener('change', () => setDuo(duoToggle.checked));
   nameEl.addEventListener('input', () => duo.pads.forEach(p => p.nameEl.textContent = (p.i ? 'P2 · ' : 'P1 · ') + padName(p)));
+
+  // ---- versus: rounds against the room ---------------------------------------
+  // the hub is the host: it picks the scale and starts rounds. every device works out the
+  // results from the same final states, so there's no scoreboard server to trust or lose
+  const VS_SCALES = [
+    { name: 'Sprint', k: 40, typ: 'under 10 presses' },
+    { name: 'Short', k: 2.7, typ: '~25 presses' },
+    { name: 'Standard', k: 0.4, typ: '~60 presses' },
+    { name: 'Long', k: 0.07, typ: '~150 presses' },
+    { name: 'Marathon', k: 0.012, typ: 'several hundred' }
+  ];   // k multiplies the risk climb; calibrated by simulation so each preset's median lands on its label
+  const POINTS = [10, 7, 5, 3, 1];
+  const vsOver = $('vsOver'), vsGo = $('vsGo'), vsCountEl = $('vsCount');
+  Object.assign(vs, { scale: 2, firstTo: 0, n: 0, seen: new Map(), session: new Map(), counting: false, timers: [], offs: [], champ: '' });
+  let mainSt = null, mainRng = Math.random;
+  function canPress() { return mode !== 'competitive' || vs.live; }
+  function vsStats() { return { t0: 0, t1: 0, times: [], pps: 0, close: 0 }; }
+  function vsTrack(st, now) {
+    if (!st || !vs.live) return;
+    if (!st.t0) st.t0 = now;
+    st.t1 = now;
+    st.times.push(now);
+    while (st.times[0] < now - 1000) st.times.shift();
+    st.pps = Math.max(st.pps, st.times.length);
+  }
+  function vsSurvived(st, r) { if (st && vs.live) st.close = Math.max(st.close, r); }
+  const vsSummary = (st, tier) => st ? { t: Math.round(((st.t1 || 0) - (st.t0 || 0)) / 100) / 10, pps: st.pps, close: +st.close.toFixed(4), ms: tier || 0 } : null;
+  function vsDone(st, n, tier) { return mode === 'competitive' && vs.rid ? { vs: vsSummary(st, tier) } : {}; }
+  // the host's clock, as best we can tell: latency only ever makes the offset look smaller, so keep the biggest recent one
+  function vsClock(hubNow) { vs.offs.push(hubNow - Date.now()); vs.offs = vs.offs.slice(-6); }
+  const hubOff = () => isHub || !vs.offs.length ? 0 : Math.max(...vs.offs);
+
+  function vsPaint() {
+    if (!vs.ready) return;                         // the first paint runs before this section exists
+    const on = mode === 'competitive' && !!room;
+    $('vsPanel').hidden = !on;
+    $('vsHost').hidden = !(on && isHub);
+    const sc = VS_SCALES[vs.scale];
+    $('vsScaleName').textContent = sc.name; $('vsScaleTyp').textContent = sc.typ;
+    $('vsStart').disabled = vs.live || vs.counting;
+    $('vsEnd').disabled = !vs.live;
+    $('vsStart').textContent = vs.champ ? 'New session' : vs.n ? 'Next round' : 'Start round';
+    $('vsInfo').textContent = !on ? '' : isHub ? (others.size ? `${others.size + (duo.on ? 2 : 1)} players in the room.` : 'nobody else here yet. send the code.')
+      : vs.live ? 'round in progress.' : 'the host starts each round.';
+    vsGo.hidden = !(on && isHub && !vs.live && !vs.counting && !vsOver.classList.contains('show'));
+    vsGo.textContent = $('vsStart').textContent;
+    if (mode === 'competitive' && !vs.live && !vs.counting && !duo.on && alive && !count) {
+      hint.textContent = !room ? 'versus needs a room. open the menu and join one.' : isHub ? 'start a round when everyone’s in.' : 'waiting for the host to start a round.';
+      hint.style.opacity = 1;
+    } else if (mode !== 'competitive' && hint.textContent !== 'press it. or tap space.') hint.textContent = 'press it. or tap space.';
+    vsRenderTable($('vsTable'));
+  }
+  $('vsScale').addEventListener('input', e => { vs.scale = +e.target.value; vsPaint(); });
+  $('vsFair').addEventListener('change', e => { vs.fair = e.target.checked; });
+  $('vsFirst').addEventListener('change', e => { vs.firstTo = +e.target.value; });
+  $('vsStart').addEventListener('click', vsStartRound);
+  vsGo.addEventListener('click', vsStartRound);
+  $('vsNext').addEventListener('click', vsStartRound);
+  $('vsEnd').addEventListener('click', () => { if (isHub && vs.live) { const m = { t: 'end', rid: vs.rid }; broadcast(m); vsEnd(m); } });
+
+  function vsStartRound() {
+    if (!isHub || vs.live || vs.counting || mode !== 'competitive' && !room) return;
+    const msg = { t: 'round', rid: Date.now() % 1e9 + 1, at: Date.now() + 3600, k: VS_SCALES[vs.scale].k, scale: vs.scale,
+      fair: !!$('vsFair').checked, seed: (Math.random() * 2 ** 31) | 0, firstTo: +$('vsFirst').value, fresh: !!vs.champ };
+    broadcast(msg);
+    vsRound(msg);
+  }
+  function vsRound(msg) {
+    if (!room) return;
+    vs.timers.forEach(clearTimeout); vs.timers = [];
+    if (mode !== 'competitive') setMode('competitive', true);
+    if (msg.fresh) { vs.session.clear(); vs.n = 0; }
+    vs.champ = '';
+    Object.assign(vs, { rid: msg.rid, k: msg.k, scale: msg.scale ?? vs.scale, fair: !!msg.fair, seed: msg.seed, firstTo: msg.firstTo || 0, live: false, counting: true });
+    vs.seen = new Map();
+    vsOver.classList.remove('show'); over.classList.remove('show');
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+    if (duo.on) duoReset(); else reset();
+    drawer.classList.remove('open');
+    const startAt = msg.at - hubOff(), now = Date.now();
+    hint.textContent = `${VS_SCALES[vs.scale].name}${vs.fair ? ' · fair luck' : ''}${vs.firstTo ? ` · first to ${vs.firstTo}` : ''}`;
+    [3, 2, 1].forEach(n => vs.timers.push(setTimeout(() => vsBeat(String(n), false), Math.max(0, startAt - n * 1000 - now))));
+    vs.timers.push(setTimeout(vsBegin, Math.max(0, startAt - now)));
+    vsPaint();
+  }
+  function vsBeat(text, go) {
+    vsCountEl.textContent = text;
+    vsCountEl.getAnimations().forEach(a => a.cancel());
+    vsCountEl.animate(go ? [{ opacity: 1, transform: 'scale(0.9)' }, { opacity: 0, transform: 'scale(1.4)', filter: 'blur(6px)' }]
+      : [{ opacity: 0, transform: 'scale(1.25)', filter: 'blur(6px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)', offset: 0.2 }, { opacity: 0, transform: 'scale(0.92)' }],
+      { duration: go ? 600 : 950, easing: EASE });
+    if (ac) { const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = go ? 880 : 440; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.15, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + (go ? 0.5 : 0.18));
+      o.connect(g).connect(dest()); o.start(t); o.stop(t + 0.6); }
+  }
+  function vsBegin() {
+    vs.counting = false; vs.live = true;
+    vsBeat('go', true);
+    mainSt = vsStats();
+    mainRng = vs.fair ? mulberry(vs.seed) : Math.random;
+    if (duo.on) duo.pads.forEach(p => { p.st = vsStats(); p.rng = vs.fair ? mulberry(vs.seed) : Math.random; });
+    hint.textContent = 'go.'; hint.style.opacity = 1;
+    setTimeout(() => { if (count) hint.style.opacity = 0; }, 900);
+    publish('start');
+    vsPaint();
+  }
+  // somebody else's state: remember everyone in this round, and notice when they leave it
+  function vsSeen(st) {
+    if (!vs.rid) return;
+    if (st.rid === vs.rid) vs.seen.set(st.uid, st);
+    else if (vs.seen.has(st.uid)) vs.seen.set(st.uid, { ...vs.seen.get(st.uid), alive: false, left: true });
+    if (vs.live && st.ev === 'die' || st.ev === 'start') vsCheckEnd();
+  }
+  function vsGone(id) { if (vs.seen.has(id)) { vs.seen.set(id, { ...vs.seen.get(id), alive: false, left: true }); vsCheckEnd(); } }
+  function myRows() {
+    return duo.on
+      ? duo.pads.map(p => ({ uid: p.uid, name: padName(p), count: p.count, alive: p.alive || !!p.pending, dbg: debugRun, vs: vsSummary(p.st, p.tier), me: true }))
+      : [{ uid, name: myName(), count, alive: alive || !!pendingDeath, dbg: debugRun, vs: vsSummary(mainSt, runTier), me: true }];
+  }
+  function vsOut() {
+    hint.textContent = `out at ${count} · watching`; hint.style.opacity = 1;
+    vsCheckEnd();
+  }
+  function vsCheckEnd() {
+    if (!vs.live) return;
+    const rows = [...myRows(), ...vs.seen.values()];
+    if (rows.every(r => !r.alive)) vsFinish(rows);
+  }
+  // host pulled the plug: whoever's still standing stops where they are
+  function vsEnd(msg) {
+    if (!vs.live || msg.rid !== vs.rid) return;
+    if (duo.on) duo.pads.forEach(p => {
+      if (p.pending) { clearTimeout(p.pending.timer); p.pending = null; }
+      if (p.alive) { p.alive = false; p.el.classList.add('out'); p.outEl.textContent = `stopped at ${p.count}`; publish('die', { ended: true, ...vsDone(p.st, p.count, p.tier) }, p); }
+    });
+    else if (alive || pendingDeath) {
+      if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+      alive = false; btn.classList.add('dead');
+      publish('die', { ended: true, ...vsDone(mainSt, count, runTier) });
+    }
+    vsCheckEnd();
+  }
+  // leaving versus mid-round counts as out, quietly
+  function vsQuit() {
+    vs.live = false; vs.counting = false; vs.rid = 0;
+    vs.timers.forEach(clearTimeout); vs.timers = [];
+    vsOver.classList.remove('show');
+  }
+  const ORD = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+  const MEDAL = ['🥇', '🥈', '🥉'];
+  function vsFinish(rows) {
+    vs.live = false; vs.n++;
+    rows = rows.map(r => ({ ...r, score: r.dbg ? 0 : r.count })).sort((a, b) => b.score - a.score || b.count - a.count);
+    rows.forEach((r, i) => { r.place = i && rows[i - 1].score === r.score ? rows[i - 1].place : i + 1; r.pts = r.dbg ? 0 : POINTS[r.place - 1] || 0; });
+    for (const r of rows) {
+      const e = vs.session.get(r.uid) || { name: r.name, pts: 0, wins: 0, rounds: [] };
+      e.name = r.name; e.pts += r.pts; e.rounds.push({ s: r.score, w: r.place === 1 && r.score > 0 }); e.rounds = e.rounds.slice(-12);
+      if (r.place === 1 && r.score > 0) e.wins++;
+      e.me = !!r.me;
+      vs.session.set(r.uid, e);
+    }
+    if (!debugRun) {                                  // your versus save: rounds played, rounds won
+      S.rounds = (S.rounds || 0) + 1;
+      if (rows.some(r => r.me && r.place === 1 && r.score > 0)) S.wins = (S.wins || 0) + 1;
+      saveMode();
+    }
+    const top = [...vs.session.values()].sort((a, b) => b.pts - a.pts)[0];
+    vs.champ = vs.firstTo && top && top.pts >= vs.firstTo ? top.name : '';
+    // the card
+    $('vsRoundLabel').textContent = `round ${vs.n} · ${VS_SCALES[vs.scale].name}${vs.fair ? ' · fair luck' : ''}`;
+    const mine = rows.filter(r => r.me), win = rows[0];
+    $('vsHeadline').textContent = vs.champ ? `${vs.champ} takes the session` : rows.length < 2 ? `${win.count}` :
+      mine.some(r => r.place === 1) ? (rows.filter(r => r.place === 1).length > 1 ? 'tied for first' : (duo.on ? `${win.name} wins` : 'you win')) : `${win.name} wins`;
+    $('vsPlaces').innerHTML = rows.map((r, i) => {
+      const next = rows[i + 1];
+      const gap = r.dbg ? '🛠 debug run · scores zero' : next && r.score > next.score ? `+${r.score - next.score} over ${esc(next.name)}` : next && r.score === next.score ? `tied with ${esc(next.name)}` : r.left ? 'left the room' : '';
+      return `<li class="${r.me ? 'me' : ''}"><span class="pl">${MEDAL[r.place - 1] || ORD(r.place)}</span><span class="nm">${esc(r.name)}</span><span class="ct">${r.count}</span>${gap ? `<span class="gap">${gap}</span>` : ''}</li>`;
+    }).join('');
+    $('vsMine').innerHTML = mine.map(r => {
+      const v = r.vs || {};
+      return `${duo.on ? `<b>${esc(r.name)}</b>: ` : ''}<b>${r.count}</b> in ${v.t || 0}s · peak ${v.pps || 0}/s · ${v.ms || 0} milestone${v.ms === 1 ? '' : 's'}` +
+        (v.close >= 0.02 ? ` · survived a <b>${fmtPct(v.close)}</b> press` : '');
+    }).join('<br>');
+    $('vsSessionLabel').textContent = vs.firstTo ? `session · first to ${vs.firstTo}` : 'session';
+    vsRenderTable($('vsTable2'));
+    $('vsHostRow').hidden = !isHub;
+    $('vsNext').textContent = vs.champ ? 'New session' : 'Next round';
+    $('vsWait').hidden = isHub;
+    setTimeout(() => { vsOver.classList.add('show'); if (isHub) $('vsNext').focus({ preventScroll: true }); vsPaint(); }, 900);
+    vsPaint();
+  }
+  function vsRenderTable(el) {
+    const list = [...vs.session.values()].sort((a, b) => b.pts - a.pts || b.wins - a.wins);
+    if (!list.length) { el.innerHTML = '<li class="empty">no rounds yet.</li>'; return; }
+    el.innerHTML = list.map(e => {
+      const mx = Math.max(1, ...e.rounds.map(r => r.s));
+      const avg = Math.round(e.rounds.reduce((x, r) => x + r.s, 0) / e.rounds.length);
+      return `<li class="${e.me ? 'me' : ''}" title="avg ${avg} · best ${Math.max(...e.rounds.map(r => r.s))}"><span class="nm">${esc(e.name)} <small style="color:var(--muted);font-weight:500">· ${e.wins} win${e.wins === 1 ? '' : 's'} · avg ${avg}</small></span>` +
+        `<span class="spark">${e.rounds.map(r => `<i class="${r.w ? 'w' : ''}" style="height:${Math.max(2, r.s / mx * 16)}px"></i>`).join('')}</span><span class="pts">${e.pts}</span></li>`;
+    }).join('');
+  }
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  vs.ready = true;
 
   let toastTimer = 0;
   function toast(text, kind = '') {
