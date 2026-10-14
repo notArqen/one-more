@@ -12,12 +12,12 @@ The story bible for **story mode**. Endless mode uses Acts I–II only, then loo
 
 | | Story mode | Endless mode |
 | --- | --- | --- |
-| Where | Side menu → Story mode switch | Default (story switch off) |
+| Where | Side menu → mode picker → Story | Side menu → mode picker → Endless (default) |
 | Multiplayer | Not allowed (locks while in a room) | Yes |
 | Odds | Risk climbs at 30% speed and never passes 1.2%; **half of all fatal presses are forgiven**; pity: after 4 runs in a row without a new milestone, the climb and ceiling shrink 15% per extra run (down to 35%), reset on the next new milestone | Normal |
 | Checkpoints | Entering an act knocks the hidden risk back to ~0.1%; acts become restart points in the Story panel; the game-over card defaults to "one more from checkpoint" (space too) | None |
 | Content | Every act, in order | Acts I–II, then loops event horizon → the other side, wilder each lap |
-| Saves | Own best, tiers, drift, history, furthest act | Own best, tiers, drift, history |
+| Saves | `onemore.save.story`: best, tiers, drift, history, furthest act, checkpoint counts, pity | `onemore.save.endless`: best, tiers, drift, history |
 
 Both modes: risk eases as a run gets longer (the climb slows to 30% speed by about press 70). Fixed milestones drift 3–7 presses further out after every new record. A fatal press is followed by a short pause before death, and the next press cuts the pause short.
 
@@ -103,6 +103,10 @@ Fade in on "One More / Press your luck." It looks like a new game, but the count
 ## Endless mode
 
 Acts I–II up to **the other side**, then it laps: event horizon → singularity → heat death → the other side → event horizon… Each lap multiplies particles, shake, RGB split, warp strength and star speed by about 45%. The banner reads "event horizon ×2", "×3" and so on. No rewind, Machine, or later acts.
+
+## Saves
+
+Each mode has one JSON save (`onemore.save.<mode>`); modes never share progress. A global save (`onemore.save`) holds the name, last room, last mode and lifetime presses. Saves from before the mode picker (one key per value) are copied over on first load, and the old keys are left as they were. **Erase progress** wipes only the current mode. **Export save** gives a code (or a .json download) with every mode's save; **Import save** takes either, checks it, shows what it would replace, and asks before overwriting. The room code is never exported.
 
 ## Debug console
 

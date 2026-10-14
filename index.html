@@ -356,6 +356,22 @@
   .acts li.done .st { color: #5fd38a; }
   .fine.pity { color: #5fd38a; }
   .fine { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .modes { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); flex: none; }
+  .modes button { all: unset; position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 34px; border-radius: 9px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; text-align: center; transition: color 160ms ease, transform 140ms var(--ease-out); }
+  .modes button[aria-checked="true"] { color: var(--ink); }
+  .modes button:active:not(:disabled) { transform: scale(0.96); }
+  .modes button:disabled { opacity: 0.38; cursor: not-allowed; }
+  .modes button:focus-visible { outline: 2px solid rgba(255,138,107,0.6); }
+  .modes small { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 1px; }
+  .modes-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 4); border-radius: 9px; background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); transition: transform 220ms var(--ease-out); }
+  .modes.locked [data-mode="story"] { opacity: 0.38; cursor: not-allowed; }
+  .mode-note { margin-top: -6px; }
+  .saves { border-top: 1px solid var(--panel-line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .save-box { display: flex; flex-direction: column; gap: 8px; }
+  .save-box[hidden] { display: none; }
+  .save-code { resize: none; font: 11px/1.4 ui-monospace, Menlo, monospace; word-break: break-all; height: auto; padding: 8px 10px; }
+  .save-box .fine.bad { color: var(--red-hi); }
+  .save-box .fine.good { color: #5fd38a; }
   .mode { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 14px; cursor: pointer; }
   .mode b { display: block; font-size: 14px; }
   .mode small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -599,6 +615,14 @@
 
 <aside class="drawer" id="drawer">
   <button class="tab" id="tab" aria-label="Friends"><span class="chev">&rsaquo;</span><span class="badge" id="badge"></span></button>
+  <div class="modes" id="modes" role="radiogroup" aria-label="Mode">
+    <span class="modes-pill" id="modesPill"></span>
+    <button role="radio" data-mode="endless">Endless</button>
+    <button role="radio" data-mode="story">Story</button>
+    <button role="radio" data-mode="competitive" disabled>Versus<small>soon</small></button>
+    <button role="radio" data-mode="autofarm" disabled>Autofarm<small>soon</small></button>
+  </div>
+  <p class="fine mode-note" id="modeNote"></p>
   <h2 id="paneTitle">Friends</h2>
   <div class="pane" id="storyPane" hidden>
     <div class="stat-row">
@@ -624,10 +648,18 @@
   <div class="status" id="status">same code, same room. peer to peer.</div>
   <ul class="players" id="players"></ul>
   </div>
-  <label class="mode" id="modeRow">
-    <span><b>Story mode</b><small id="modeNote">checkpoints · solo only</small></span>
-    <input type="checkbox" id="storyToggle" role="switch">
-  </label>
+  <div class="saves">
+    <div class="row2">
+      <button class="pill quiet" id="exportBtn">Export save</button>
+      <button class="pill quiet" id="importBtn">Import save</button>
+    </div>
+    <div class="save-box" id="saveBox" hidden>
+      <textarea class="field save-code" id="saveCode" rows="3" spellcheck="false" autocomplete="off"></textarea>
+      <p class="fine" id="saveMsg"></p>
+      <div class="row2" id="saveActs"></div>
+      <input type="file" id="saveFile" accept=".json,.txt,application/json,text/plain" hidden>
+    </div>
+  </div>
   <div class="erase">
     <button class="pill quiet" id="eraseBtn">Erase progress</button>
     <div class="slide" id="slideBox" hidden>
@@ -700,13 +732,63 @@
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
-  let story = store.get('onemore.story') === '1';
+
+  // ---- saves ----------------------------------------------------------------
+  // one JSON blob per mode (onemore.save.<mode>) plus a global one (onemore.save).
+  // modes never share progress. debug and incognito runs never write.
+  const SAVE_V = 1;
+  const MODES = ['endless', 'story', 'competitive', 'autofarm'];
+  const BUILT = ['endless', 'story'];
+  const int = (v, max = 1e9) => { v = Math.floor(+v); return Number.isFinite(v) && v > 0 ? Math.min(v, max) : 0; };
+  function cleanMode(m, o) {          // also validates imports: anything odd falls back to zero
+    o = o && typeof o === 'object' ? o : {};
+    const c = { best: int(o.best), tiers: int(o.tiers, 99), drift: int(o.drift, 1e6),
+      runs: (Array.isArray(o.runs) ? o.runs : []).map(v => int(v)).slice(-14) };
+    if (m === 'story') {
+      c.act = int(o.act, 9); c.pity = int(o.pity, 1e6); c.actAt = {};
+      for (let i = 1; i <= 6; i++) if (int(o.actAt?.[i])) c.actAt[i] = int(o.actAt[i]);
+    }
+    return c;
+  }
+  function cleanGlobal(o) {
+    o = o && typeof o === 'object' ? o : {};
+    return { v: SAVE_V, name: typeof o.name === 'string' ? o.name.slice(0, 16) : '', room: typeof o.room === 'string' ? o.room.replace(/[^A-Z0-9]/g, '').slice(0, 6) : '',
+      mode: BUILT.includes(o.mode) ? o.mode : 'endless', presses: int(o.presses, 1e12) };
+  }
+  const readJSON = k => { try { return JSON.parse(store.get(k)); } catch { return null; } };
+  // one-time copy from the old one-key-per-value saves. the old keys stay put, untouched.
+  (function migrate() {
+    if (store.get('onemore.save')) return;
+    const num = k => int(store.get(k));
+    const old = sfx => ({ best: num('onemore.best' + sfx), tiers: num('onemore.tiers' + sfx), drift: num('onemore.drift' + sfx),
+      runs: (() => { try { return JSON.parse(store.get('onemore.runs' + sfx) || '[]'); } catch { return []; } })() });
+    const e = cleanMode('endless', old(''));
+    const st = cleanMode('story', { ...old('.story'), act: num('onemore.act'), pity: num('onemore.pity'),
+      actAt: Object.fromEntries([1, 2, 3, 4].map(i => [i, num('onemore.actAt.' + i)])) });
+    store.set('onemore.save.endless', JSON.stringify(e));
+    store.set('onemore.save.story', JSON.stringify(st));
+    const sum = a => a.reduce((x, y) => x + y, 0);
+    store.set('onemore.save', JSON.stringify(cleanGlobal({ name: store.get('onemore.name') || '', room: store.get('onemore.room') || '',
+      mode: store.get('onemore.story') === '1' ? 'story' : 'endless', presses: sum(e.runs) + sum(st.runs) })));
+  })();
+  const G = cleanGlobal(readJSON('onemore.save'));
+  const saveGlobal = () => store.set('onemore.save', JSON.stringify(G));
+  const loadMode = m => cleanMode(m, readJSON('onemore.save.' + m));
+  let mode = G.mode;
+  let S = loadMode(mode);                                   // the current mode's save
+  const saveMode = () => store.set('onemore.save.' + mode, JSON.stringify(S));
+  const put = (k, v) => { S[k] = v; saveMode(); };           // callers check debugRun, same as before
+  let story = mode === 'story';
   // story pity: every run that dies without reaching a new milestone counts; from the 4th, the odds ease
-  let pity = parseInt(store.get('onemore.pity') || '0', 10) || 0;
+  let pity = S.pity || 0;
   const pityK = () => story && pity >= 4 ? Math.max(0.35, 1 - 0.15 * (pity - 3)) : 1;
-  const modeKey = name => story ? `onemore.${name}.story` : `onemore.${name}`;   // story and endless never share progress
-  const bestKey = () => modeKey('best');
-  let best = parseInt(store.get(bestKey()) || '0', 10) || 0;
+  let best = S.best;
+  // lifetime presses (autofarm unlocks will read this). batched so fast clicking isn't a write per press
+  let pressDirty = 0;
+  const flushPresses = () => { if (pressDirty) { pressDirty = 0; saveGlobal(); } };
+  const countPress = () => { G.presses++; if (++pressDirty >= 25) flushPresses(); };
+  addEventListener('pagehide', flushPresses);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) flushPresses(); });
 
   const bestLive = $('bestLive');
   function showBest() {
@@ -744,10 +826,10 @@
   const ACT_STARTS = [8, 13, 14, 18];   // story checkpoints: entering each act halves the hidden risk
   // milestones are fixed counts (a lucky first run can still see the black hole), but every new
   // record nudges all of them a few presses further out
-  let drift = parseInt(store.get(modeKey('drift')) || '0', 10) || 0;
+  let drift = S.drift;
   const tierCount = i => TIERS[i].at + drift;
   let runTier = 0, runBest = 0, runFresh = [];
-  let discovered = parseInt(store.get(modeKey('tiers')) || '0', 10) || 0;
+  let discovered = S.tiers;
   let runCycle = 0, bunkerStart = 0, orbitStart = 0;
   const loopLen = () => tierCount(10) - tierCount(7) + 20;          // one lap of the void, plus a breath on the other side
   const tierAt = n => {
@@ -787,13 +869,13 @@
     const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
     if (story && ACT_STARTS.includes(t)) {
       risk = Math.min(risk * 0.5, 0.001); setTimeout(() => toast('checkpoint', 'good'), 900);   // a checkpoint nearly resets the odds
-      const act = ACT_STARTS.indexOf(t) + 1, key = 'onemore.actAt.' + act;
-      if (!debugRun && !store.get(key)) store.set(key, count);
-      if (!debugRun && act > (parseInt(store.get('onemore.act') || '0', 10) || 0)) store.set('onemore.act', act);
+      const act = ACT_STARTS.indexOf(t) + 1;
+      if (!debugRun && !S.actAt[act]) { S.actAt[act] = count; saveMode(); }
+      if (!debugRun && act > S.act) put('act', act);
     }
     if (t > discovered) {
-      discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t);
-      if (story && !debugRun && pity) { pity = 0; store.set('onemore.pity', 0); }   // new milestone: pity resets
+      discovered = t; if (!debugRun) put('tiers', t); runFresh.push(t);
+      if (story && !debugRun && pity) { pity = 0; put('pity', 0); }   // new milestone: pity resets
     }
     const b = $('banner');
     b.textContent = name;
@@ -1063,6 +1145,7 @@
     rapid = nowT - lastPress < 80;
     lastPress = nowT;
     count++;
+    if (!debugRun) countPress();
     numEl.textContent = shownCount();
     heatTarget = runTier >= 14 ? 0 : runTier >= 13 ? echoTier * 0.13 : heatFor(count);
     const h = heatTarget;
@@ -1153,9 +1236,9 @@
     const prevBest = best;
     const isBest = count > best;
     if (isBest && !debugRun) {
-      best = count; store.set(bestKey(), best);
+      best = count; S.best = best;
       drift += 3 + Math.floor(Math.random() * 5);   // 3–7 further out next time
-      store.set(modeKey('drift'), drift);
+      put('drift', drift);
     }
     else if (isBest) best = count;   // debug: show it this session, never save it
     $('final').textContent = count;
@@ -1164,7 +1247,8 @@
     $('newbest').textContent = isBest ? (prevBest > 0 ? `new best · +${count - prevBest}` : 'new best') : '';
     $('near').textContent = nearMiss(prevBest, isBest);
     pushHistory(count);
-    if (story && !debugRun && !runFresh.length) { pity++; store.set('onemore.pity', pity); }
+    if (story && !debugRun && !runFresh.length) { pity++; put('pity', pity); }
+    flushPresses();
     lastCheckpoint = story ? actOf(runTier) : 0;
     $('againCp').hidden = !lastCheckpoint;
     $('again').textContent = lastCheckpoint ? 'Start over' : 'One more';
@@ -1199,11 +1283,11 @@
   }
 
   let runs = [];
-  const loadRuns = () => { try { return JSON.parse(store.get(modeKey('runs')) || '[]').slice(-14); } catch { return []; } };
+  const loadRuns = () => S.runs.slice(-14);
   runs = loadRuns();
   function pushHistory(n) {
     runs.push(n); runs = runs.slice(-14);
-    if (!debugRun) store.set(modeKey('runs'), JSON.stringify(runs));
+    if (!debugRun) put('runs', runs.slice());
     const max = Math.max(...runs, 1);
     const top = Math.max(...runs);
     $('history').innerHTML = runs.map((v, i) =>
@@ -2518,9 +2602,9 @@
   const conns = new Map();      // hub only: peerId -> { conn, uid }
   const others = new Map();     // uid -> last state
 
-  nameEl.value = store.get('onemore.name') || 'player ' + uid.slice(0, 3);
-  nameEl.addEventListener('input', () => { store.set('onemore.name', nameEl.value.trim()); publish('name'); });
-  codeEl.value = store.get('onemore.room') || '';
+  nameEl.value = G.name || 'player ' + uid.slice(0, 3);
+  nameEl.addEventListener('input', () => { G.name = nameEl.value.trim(); saveGlobal(); publish('name'); });
+  codeEl.value = G.room;
   codeEl.addEventListener('input', () => { codeEl.value = codeEl.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   codeEl.addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(codeEl.value); });
 
@@ -2540,9 +2624,9 @@
     { tier: 14, name: 'the bunker' },
     { tier: 18, name: 'orbit' }
   ];
-  let furthestAct = parseInt(store.get('onemore.act') || '0', 10) || 0;
-  for (let i = 1; i <= 4; i++) if (store.get('onemore.actAt.' + i)) furthestAct = Math.max(furthestAct, i);
-  const syncAct = () => { furthestAct = Math.max(furthestAct, parseInt(store.get('onemore.act') || '0', 10) || 0); };
+  const actsReached = () => { let a = S.act || 0; for (const i in S.actAt || {}) a = Math.max(a, +i); return a; };
+  let furthestAct = actsReached();
+  const syncAct = () => { furthestAct = Math.max(furthestAct, S.act || 0); };
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   function actOf(t) { let a = 0; ACTS.forEach((x, i) => { if (t >= x.tier) a = i; }); return a; }
   function renderStory() {
@@ -2554,7 +2638,7 @@
     if (!on) return;
     syncAct();
     const cur = actOf(runTier);
-    if (cur > furthestAct && !debugRun) { furthestAct = cur; store.set('onemore.act', cur); }
+    if (cur > furthestAct && !debugRun) { furthestAct = cur; put('act', cur); }
     $('sBest').textContent = best;
     $('sNow').textContent = count;
     $('sPity').hidden = pity < 4;
@@ -2581,7 +2665,7 @@
     reset();
     if (i === 0) { renderStory(); return; }
     unlockAudio();
-    const saved = parseInt(store.get('onemore.actAt.' + i) || '0', 10);
+    const saved = S.actAt[i] || 0;
     const start = [0, tierCount(7), tierCount(12), saved || tierCount(12) + 120, saved || tierCount(12) + 230][i];
     $('title').classList.add('gone'); hint.style.opacity = 0;
     if (i === 4) { count = start; runTier = 17; enterOrbit(true); count = start - 1; }
@@ -2592,42 +2676,55 @@
     renderStory();
   }
 
-  const storyToggle = $('storyToggle');
-  storyToggle.checked = story;
-  renderStory();
-  modeNote();
-  function setStory(on) {
-    story = on;
-    storyToggle.checked = on;
-    store.set('onemore.story', on ? '1' : '0');
-    best = parseInt(store.get(bestKey()) || '0', 10) || 0;
-    drift = parseInt(store.get(modeKey('drift')) || '0', 10) || 0;
-    discovered = parseInt(store.get(modeKey('tiers')) || '0', 10) || 0;
+  // mode picker: one save per mode, swapped wholesale
+  const modesEl = $('modes'), modeBtns = [...modesEl.querySelectorAll('button')];
+  const MODE_NOTES = { endless: 'the void loops, wilder every lap. rooms welcome.', story: 'the saga, with checkpoints and kinder odds. solo only.' };
+  function paintModes() {
+    modeBtns.forEach((b, i) => {
+      const on = b.dataset.mode === mode;
+      b.setAttribute('aria-checked', on);
+      b.tabIndex = on ? 0 : -1;
+      if (on) $('modesPill').style.transform = `translateX(${i * 100}%)`;
+    });
+    modesEl.classList.toggle('locked', !!room);
+    $('modeNote').textContent = room ? 'in a room: endless only. leave to play story.' : MODE_NOTES[mode] || '';
+  }
+  function setMode(m, quiet) {
+    if (!BUILT.includes(m)) return;
+    if (m === 'story' && room) { toast('story is solo only · leave the room first'); return; }
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+    const changed = m !== mode;
+    mode = m; story = m === 'story';
+    G.mode = m; saveGlobal();
+    S = loadMode(m);
+    best = S.best; drift = S.drift; discovered = S.tiers; pity = S.pity || 0;
+    furthestAct = actsReached();
     runs = loadRuns();
     eraseLabel();
     if (alive || count) reset(); else { showBest(); updateRing(); }
     renderStory();
-    modeNote();
+    paintModes();
+    if (changed && !quiet) toast(story ? 'story mode' : 'endless mode', story ? 'good' : '');
   }
-  function modeNote(locked = !!room) {
-    $('modeNote').textContent = locked ? 'not available in rooms · endless mode' : story ? 'checkpoints · solo only' : 'off: endless mode';
-  }
-  function lockStory(locked) {
-    storyToggle.disabled = locked;
-    $('modeRow').classList.toggle('locked', locked);
-    modeNote(locked);
-  }
-  storyToggle.addEventListener('change', () => {
-    if (room) { storyToggle.checked = false; return; }
-    setStory(storyToggle.checked);
-    toast(story ? 'story mode' : 'endless mode', story ? 'good' : '');
+  const setStory = on => setMode(on ? 'story' : 'endless', true);
+  modesEl.addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) setMode(b.dataset.mode); });
+  modesEl.addEventListener('keydown', e => {           // arrow keys move between the built modes
+    const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const opts = BUILT.filter(m => !(m === 'story' && room));
+    const next = opts[(opts.indexOf(mode) + d + opts.length) % opts.length];
+    setMode(next);
+    modesEl.querySelector(`[data-mode="${next}"]`).focus();
   });
+  renderStory();
+  paintModes();
 
   // erase progress: the button only reveals a slider; dragging it all the way is the real confirmation
   const slideBox = $('slideBox'), slide = $('slide');
   function eraseLabel() {
-    $('eraseBtn').textContent = `Erase ${story ? 'story' : 'endless'} progress`;
-    $('slideLabel').textContent = `slide to erase ${story ? 'story' : 'endless'} progress`;
+    $('eraseBtn').textContent = `Erase ${mode} progress`;
+    $('slideLabel').textContent = `slide to erase ${mode} progress`;
   }
   eraseLabel();
   $('eraseBtn').addEventListener('click', () => {
@@ -2649,17 +2746,112 @@
   slide.addEventListener('change', snapBack);
   slide.addEventListener('input', () => { if (+slide.value >= 98) eraseProgress(); });
   function eraseProgress() {
-    ['best', 'tiers', 'drift', 'runs'].forEach(k => { try { localStorage.removeItem(modeKey(k)); } catch {} });
-    best = 0; discovered = 0; drift = 0; runs = [];
-    if (story) { pity = 0; try { localStorage.removeItem('onemore.pity'); } catch {}
-      furthestAct = 0; try { ['onemore.act', 'onemore.actAt.1', 'onemore.actAt.2', 'onemore.actAt.3', 'onemore.actAt.4'].forEach(k => localStorage.removeItem(k)); } catch {} }
+    S = cleanMode(mode, {}); saveMode();                  // only this mode; the others are untouched
+    best = 0; discovered = 0; drift = 0; runs = []; pity = 0; furthestAct = 0;
     slideBox.hidden = true; slide.value = 0;
     eraseLabel();
     if (alive) reset(); else { showBest(); updateRing(); }
     publish('reset');
-    toast(`${story ? 'story' : 'endless'} progress erased`, 'bad');
+    toast(`${mode} progress erased`, 'bad');
     renderStory();
   }
+
+  // export / import: every mode's save in one paste-able code (or a .json file)
+  const saveBox = $('saveBox'), saveCode = $('saveCode'), saveMsg = $('saveMsg'), saveActs = $('saveActs');
+  const CODE_TAG = 'ONEMORE1:';
+  let boxFor = null, pending = null;
+  const b64 = str => { let bin = ''; new TextEncoder().encode(str).forEach(c => bin += String.fromCharCode(c)); return btoa(bin); };
+  const unb64 = str => new TextDecoder().decode(Uint8Array.from(atob(str), c => c.charCodeAt(0)));
+  function bundle() {
+    flushPresses();
+    const modes = {}; MODES.forEach(m => { if (store.get('onemore.save.' + m)) modes[m] = loadMode(m); });
+    const { room: _, ...g } = G;                          // the last room code stays on this device
+    return { game: 'one-more', v: SAVE_V, at: new Date().toISOString().slice(0, 10), global: g, modes };
+  }
+  function parseSave(text) {
+    text = (text || '').trim();
+    if (!text) throw new Error('paste a save code or load a file.');
+    let o;
+    try { o = JSON.parse(text.startsWith('{') ? text : unb64(text.replace(/^ONEMORE1:/i, '').replace(/\s+/g, ''))); }
+    catch { throw new Error('that isn’t a One More save.'); }
+    if (!o || o.game !== 'one-more' || typeof o.modes !== 'object') throw new Error('that isn’t a One More save.');
+    if (o.v > SAVE_V) throw new Error('that save is from a newer version of the game.');
+    const modes = {};
+    for (const m of MODES) if (o.modes[m]) modes[m] = cleanMode(m, o.modes[m]);
+    if (!Object.keys(modes).length) throw new Error('that save has no progress in it.');
+    return { global: o.global || {}, modes, at: typeof o.at === 'string' ? o.at.slice(0, 10) : '' };
+  }
+  const summary = modes => Object.entries(modes).map(([m, v]) =>
+    `${m} best ${v.best}` + (m === 'story' && (v.act || Object.keys(v.actAt).length) ? ` · act ${ROMAN[Math.max(v.act, ...Object.keys(v.actAt).map(Number))]}` : '')).join(' · ');
+  function msg(text, tone = '') { saveMsg.textContent = text; saveMsg.className = 'fine ' + tone; }
+  function actions(list) {
+    saveActs.innerHTML = '';
+    list.forEach(([label, fn, quiet]) => { const b = document.createElement('button'); b.className = 'pill' + (quiet ? ' quiet' : ''); b.textContent = label; b.onclick = fn; saveActs.append(b); });
+  }
+  function openBox(kind) {
+    if (boxFor === kind && !saveBox.hidden) { saveBox.hidden = true; boxFor = null; return; }
+    boxFor = kind; pending = null; saveBox.hidden = false;
+    if (kind === 'export') {
+      const data = bundle();
+      saveCode.readOnly = true;
+      saveCode.value = CODE_TAG + b64(JSON.stringify(data));
+      msg(summary(data.modes) || 'nothing saved yet.');
+      actions([
+        ['Copy code', async () => {
+          try { await navigator.clipboard.writeText(saveCode.value); } catch { saveCode.select(); document.execCommand('copy'); }
+          msg('copied. paste it into Import on the other device.', 'good');
+        }],
+        ['Download', () => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+          a.download = `one-more-save-${data.at}.json`;
+          a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }, true]
+      ]);
+      saveCode.select();
+    } else {
+      saveCode.readOnly = false; saveCode.value = '';
+      saveCode.placeholder = 'paste a save code here';
+      msg('replaces the saves for every mode included in the code.');
+      showImportActs();
+      saveCode.focus();
+    }
+  }
+  function showImportActs() {
+    actions([['Check', checkImport], ['Load file', () => $('saveFile').click(), true]]);
+  }
+  function checkImport() {
+    try { pending = parseSave(saveCode.value); }
+    catch (err) { pending = null; msg(err.message, 'bad'); return; }
+    const now = {}; Object.keys(pending.modes).forEach(m => now[m] = loadMode(m));
+    msg(`import ${summary(pending.modes)}${pending.at ? ` (saved ${pending.at})` : ''}. this replaces ${summary(now)} on this device.`, 'bad');
+    actions([['Replace saves', applyImport], ['Cancel', () => { pending = null; msg(''); showImportActs(); }, true]]);
+  }
+  function applyImport() {
+    if (!pending) return;
+    if (pendingDeath) { clearTimeout(pendingDeath.timer); pendingDeath = null; }
+    for (const [m, v] of Object.entries(pending.modes)) store.set('onemore.save.' + m, JSON.stringify(v));
+    const g = cleanGlobal({ ...pending.global, room: G.room });
+    G.name = g.name || G.name; G.presses = g.presses;
+    saveGlobal();
+    if (G.name) { nameEl.value = G.name; publish('name'); }
+    const want = room ? 'endless' : BUILT.includes(pending.global.mode) ? pending.global.mode : mode;
+    pending = null;
+    mode = null;                                              // force a full reload of the (new) save
+    setMode(want, true);
+    saveBox.hidden = true; boxFor = null;
+    publish('reset');
+    toast('save imported', 'good');
+  }
+  $('exportBtn').addEventListener('click', () => openBox('export'));
+  $('importBtn').addEventListener('click', () => openBox('import'));
+  $('saveFile').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    if (f.size > 200000) { msg('that file is too big to be a save.', 'bad'); return; }
+    saveCode.value = await f.text();
+    checkImport();
+  });
 
   const myState = (ev, extra) => ({ t: 'state', uid, name: nameEl.value.trim() || 'anon', count, best, alive, tier: runTier, h: +heatFor(count).toFixed(2), ev, ...extra });
 
@@ -2695,10 +2887,10 @@
     if (typeof Peer === 'undefined') { setStatus('couldn’t load the p2p library. offline?'); return; }
     teardown();
     leaving = false;
-    if (story) { setStory(false); toast('story mode is off in rooms'); }
-    lockStory(true);
     room = code;
-    store.set('onemore.room', code);
+    if (story) { setStory(false); toast('story mode is off in rooms'); }
+    paintModes();
+    G.room = code; saveGlobal();
     setJoined(true);
     setStatus(`room <b>${code}</b> · connecting…`);
     claimHub();
@@ -2800,7 +2992,7 @@
   }
   function leaveRoom() {
     leaving = true; room = null;
-    lockStory(false);
+    paintModes();
     teardown();
     setJoined(false);
     setStatus('left the room.');
