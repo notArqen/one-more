@@ -756,8 +756,9 @@
     const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
     if (story && ACT_STARTS.includes(t)) {
       risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900);
-      const key = 'onemore.actAt.' + (ACT_STARTS.indexOf(t) + 1);
+      const act = ACT_STARTS.indexOf(t) + 1, key = 'onemore.actAt.' + act;
       if (!debugRun && !store.get(key)) store.set(key, count);
+      if (!debugRun && act > (parseInt(store.get('onemore.act') || '0', 10) || 0)) store.set('onemore.act', act);
     }
     if (t > discovered) { discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t); }
     const b = $('banner');
@@ -2197,6 +2198,8 @@
     { tier: 14, name: 'the bunker' }
   ];
   let furthestAct = parseInt(store.get('onemore.act') || '0', 10) || 0;
+  for (let i = 1; i <= 3; i++) if (store.get('onemore.actAt.' + i)) furthestAct = Math.max(furthestAct, i);
+  const syncAct = () => { furthestAct = Math.max(furthestAct, parseInt(store.get('onemore.act') || '0', 10) || 0); };
   const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   function actOf(t) { let a = 0; ACTS.forEach((x, i) => { if (t >= x.tier) a = i; }); return a; }
   function renderStory() {
@@ -2206,6 +2209,7 @@
     $('paneTitle').textContent = on ? 'Story' : 'Friends';
     $('tab').setAttribute('aria-label', on ? 'Story' : 'Friends');
     if (!on) return;
+    syncAct();
     const cur = actOf(runTier);
     if (cur > furthestAct && !debugRun) { furthestAct = cur; store.set('onemore.act', cur); }
     $('sBest').textContent = best;
@@ -2301,7 +2305,7 @@
   function eraseProgress() {
     ['best', 'tiers', 'drift', 'runs'].forEach(k => { try { localStorage.removeItem(modeKey(k)); } catch {} });
     best = 0; discovered = 0; drift = 0; runs = [];
-    if (story) { furthestAct = 0; try { localStorage.removeItem('onemore.act'); } catch {} }
+    if (story) { furthestAct = 0; try { ['onemore.act', 'onemore.actAt.1', 'onemore.actAt.2', 'onemore.actAt.3'].forEach(k => localStorage.removeItem(k)); } catch {} }
     slideBox.hidden = true; slide.value = 0;
     eraseLabel();
     if (alive) reset(); else { showBest(); updateRing(); }
