@@ -536,6 +536,9 @@
     if (t > discovered) { discovered = t; store.set('onemore.tiers', t); runFresh.push(t); }
     const b = $('banner');
     b.textContent = name;
+    // sits in the title's slot (the title is faded out mid-run), clear of the number and button
+    const ti = $('title');
+    b.style.top = (ti.offsetTop + ti.offsetHeight / 2 - b.offsetHeight / 2) + 'px';
     b.animate([
       { opacity: 0, transform: 'translateX(-50%) translateY(8px) scale(0.92)', filter: 'blur(4px)' },
       { opacity: 1, transform: 'translateX(-50%) scale(1)', filter: 'blur(0)', offset: 0.15 },
