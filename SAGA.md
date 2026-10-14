@@ -50,10 +50,10 @@ Writing rules: no random effects that aren't tied to progress. Undiscovered tier
 
 ## Act III: The Machine ✅ (255+) · checkpoint
 
-1. **it notices you (255):** hard cut to OLED black, deadpan grey button, heartbeat on every press. It talks: opening lines every ~10 presses, then rotating lines every 30–45 (at least 8s apart, so spam can't speed it up). The tab title copies each line, and the cursor becomes a crosshair.
+1. **it notices you (255):** hard cut to OLED black, deadpan grey button, heartbeat on every press. It talks: the opening script advances a line every 6 presses (by presses, never by time, so the act always moves forward), then rotating lines every 30–45 presses (at least 8s apart). The tab title copies each line, and the cursor becomes a crosshair.
 2. **It breaks:** nine stages of the stylesheet "failing": serif fallback font, square button, misaligned ring, browser-default labels, red debug outline, monospace, and a counter that sometimes shows `undefined`.
-3. **The echo:** after "i'll just watch.", Act I's effects creep back one tier every 12 presses.
-4. **The drain:** then the colour drains to black and white over 100 presses.
+3. **The echo:** after "i'll just watch.", Act I's effects creep back one tier every 8 presses.
+4. **The drain:** then the colour drains to black and white over 60 presses.
 5. **signal lost:** CRT power-off (white line, then a dot), 3s of silence with input locked, then a clunk.
 
 ## Act IV: The Bunker ✅ · checkpoint

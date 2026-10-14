@@ -968,15 +968,15 @@
     heartbeat(Math.min(1, 0.3 + k / 80));
     const calm = performance.now() - lastSaid > 8000;   // spam-clicking can't make it talk faster
     if (watchAt >= 0 && k > watchAt) {
-      const e = Math.min(7, 1 + Math.floor((k - watchAt - 1) / 12));   // one tier back every 12 presses
+      const e = Math.min(7, 1 + Math.floor((k - watchAt - 1) / 8));    // one tier back every 8 presses
       if (e !== echoTier) { echoTier = e; document.body.classList.add('returning'); if (e === 7) drainAt = k; }
     }
     if (drainAt >= 0) {                     // then the colour slowly drains to black and white
-      const g = Math.min(1, (k - drainAt) / 100);
+      const g = Math.min(1, (k - drainAt) / 60);
       if (g >= 1 && story && !transit && !bunkerStart) setTimeout(signalLost, 0);
       $('drain').style.backdropFilter = $('drain').style.webkitBackdropFilter = `grayscale(${g.toFixed(3)}) contrast(${(1 + g * 0.35).toFixed(3)})`;
     }
-    if (lineI < LINES.length && k >= lineI * 10 && calm) {
+    if (lineI < LINES.length && k >= lineI * 6) {
       if (LINES[lineI] === 'i’ll just watch.') watchAt = k;
       say(LINES[lineI++]);
       if (lineI === LINES.length) nextLineAt = k + 30 + Math.floor(Math.random() * 16);
@@ -3021,7 +3021,7 @@
     risk(p) { if (p !== undefined) { risk = Math.min(MAX_RISK, Math.max(MIN_RISK, p)); dbgTag(); } return fmtPct(risk); },
     die() { if (alive) { alive = false; dbgTag(); die(drama(count)); } },
     // in the talking stage: skip ahead to "i'll just watch" (the echo starts right after)
-    watch() { if (runTier < 13) return 'reach it notices you first: onemore.to(13)'; lineI = LINES.indexOf('i’ll just watch.'); lastSaid = -1e9; noticeBase = count - lineI * 10; return 'next press says it'; },
+    watch() { if (runTier < 13) return 'reach it notices you first: onemore.to(13)'; lineI = LINES.indexOf('i’ll just watch.'); lastSaid = -1e9; noticeBase = count - lineI * 6; return 'next press says it'; },
     help() { return 'onemore.incognito(on?), .immortal(on?), .skip(n), .to(name|number), .watch(), .risk(p?), .die()'; }
   };
   window.__onemore = window.onemore;
