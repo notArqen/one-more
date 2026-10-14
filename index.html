@@ -257,6 +257,70 @@
     background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0 1px, transparent 1px 3px);
     mix-blend-mode: multiply;
   }
+  .rhythm {
+    margin-top: -34px; height: 14px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); opacity: 0; transition: opacity 300ms ease, color 300ms ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .rhythm.on { opacity: 0.8; }
+  .rhythm.hot { color: #ffd36b; opacity: 1; }
+  /* light leak: a warm smear of light drifting across the frame (from "on fire") */
+  .leak {
+    position: fixed; inset: -20%; pointer-events: none; opacity: 0; z-index: 3; mix-blend-mode: screen;
+    background: radial-gradient(40% 30% at 30% 40%, rgba(255,150,80,0.55), transparent 70%), radial-gradient(30% 25% at 75% 70%, rgba(255,90,140,0.35), transparent 70%);
+    animation: leak 14s ease-in-out infinite alternate;
+  }
+  @keyframes leak { from { transform: translate(-8%, -4%) rotate(-4deg); } to { transform: translate(8%, 5%) rotate(5deg); } }
+  /* god rays behind the button (from "absurd") */
+  .rays {
+    position: absolute; inset: -140px; border-radius: 50%; pointer-events: none; opacity: 0;
+    background: repeating-conic-gradient(from 0deg, rgba(255,220,170,0.22) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 70%); mask-image: radial-gradient(circle, #000 25%, transparent 70%);
+    animation: spin 40s linear infinite; mix-blend-mode: screen;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* depth of field: the scene's edges go soft (from "mythical") */
+  .dof h1, .dof .tagline, .dof .best, .dof .hint, .dof .rhythm { filter: blur(1.4px); }
+  /* the other side: a white hole. everything flips */
+  body.white { background: #f3efe8; }
+  body.white canvas#void { filter: invert(1) hue-rotate(180deg); }
+  body.white .count span {
+    color: #fff !important; -webkit-text-stroke: 2px #000;
+    text-shadow: 0 0 2px #000, 0 0 10px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.5) !important;
+  }
+  body.white .btn::before { background: #000; }
+  body.white .cap { background: radial-gradient(ellipse 22% 14% at 36% 26%, #000 98%, transparent 100%), radial-gradient(circle at 50% 50%, #fff, #e8e4dc 70%); box-shadow: inset 0 0 0 2px #000; }
+  body.white .well { background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+  body.white .best, body.white h1, body.white .tagline, body.white .hint, body.white .rhythm { color: rgba(0,0,0,0.55); }
+  body.white .zoomtrail { color: #000 !important; }
+  body.white .ring .fill, body.white .ring.past .fill { stroke: #000; }
+  .echo { position: fixed; pointer-events: none; z-index: 0; font-weight: 700; font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.12); }
+  /* rewind: VHS tracking band */
+  .vhs { position: fixed; left: 0; right: 0; height: 14%; pointer-events: none; z-index: 3; opacity: 0;
+    background: linear-gradient(transparent, rgba(255,255,255,0.18) 40%, rgba(255,255,255,0.05) 60%, transparent); mix-blend-mode: overlay; }
+  body.rewind .vhs { opacity: 1; animation: track 900ms linear infinite; }
+  @keyframes track { from { top: 110%; } to { top: -20%; } }
+  body.rewind .stage { animation: rwobble 2.4s ease-in-out infinite; }
+  @keyframes rwobble { 0%, 100% { skew: 0deg; } 50% { skew: -1.5deg; } }
+  /* it notices you: everything goes quiet */
+  body.notice { background: #0d0b0a; cursor: crosshair; }
+  body.notice .count span { color: var(--ink) !important; text-shadow: none !important; -webkit-text-stroke: 0; }
+  body.notice .vignette, body.notice .aura, body.notice .rays, body.notice .leak, body.notice .grain, body.notice .scan { opacity: 0 !important; }
+  body.notice .btn { cursor: crosshair; }
+  .whisper {
+    position: absolute; left: 50%; top: 0; transform: translateX(-50%); z-index: 2;
+    font-size: 17px; font-weight: 500; color: var(--ink); white-space: nowrap; opacity: 0; pointer-events: none;
+    max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
+  }
+  .erase { border-top: 1px solid var(--panel-line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .erase .pill { flex: none; }
+  .slide { position: relative; height: 44px; border-radius: 12px; background: var(--field); border: 1px solid rgba(255,75,62,0.35); overflow: hidden; }
+  .slide[hidden] { display: none; }
+  .slide-label { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--red-hi); letter-spacing: 0.06em; pointer-events: none; }
+  .slide input { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; background: transparent; cursor: grab; }
+  .slide input::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 42px; border-radius: 10px; background: var(--red); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .slide input::-moz-range-thumb { width: 44px; height: 42px; border: 0; border-radius: 10px; background: var(--red); }
   .best {
     margin-top: -28px;
     font-size: 14px;
@@ -446,7 +510,9 @@
 <div class="invert" id="invert"></div>
 <div class="grain" id="grain"></div>
 <div class="scan" id="scan"></div>
-<svg width="0" height="0" style="position:absolute"><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
+<div class="leak" id="leak"></div>
+<div class="vhs" id="vhs"></div>
+<svg width="0" height="0" style="position:absolute"><filter id="haze"><feTurbulence id="hazeTurb" type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="1" seed="3"/><feDisplacementMap in="SourceGraphic" id="hazeMap" scale="0"/></filter><filter id="warp"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="1"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter></svg>
 <div class="flash" id="flash"></div>
 <canvas id="fx"></canvas>
 
@@ -464,6 +530,13 @@
   <button class="pill quiet" id="leave" style="display:none;flex:none">Leave room</button>
   <div class="status" id="status">same code, same room. peer to peer.</div>
   <ul class="players" id="players"></ul>
+  <div class="erase">
+    <button class="pill quiet" id="eraseBtn">Erase progress</button>
+    <div class="slide" id="slideBox" hidden>
+      <span class="slide-label">slide to erase everything</span>
+      <input type="range" id="slide" min="0" max="100" value="0" aria-label="Slide to erase progress">
+    </div>
+  </div>
 </aside>
 <div class="toast" id="toast"></div>
 <div class="ghosts" id="ghosts"></div>
@@ -475,16 +548,19 @@
   </header>
 
   <div class="banner" id="banner"></div>
+  <div class="whisper" id="whisper"></div>
   <div class="count" id="count"><span id="num">0</span></div>
   <div class="best" id="bestLive">best 0</div>
+  <div class="rhythm" id="rhythm"></div>
 
   <div class="well">
     <div class="aura" id="aura"></div>
+    <div class="rays" id="rays"></div>
     <svg class="ring" id="ring" viewBox="0 0 220 220"><circle class="track" cx="110" cy="110" r="104"/><circle class="fill" id="ringFill" cx="110" cy="110" r="104"/></svg>
     <button class="btn" id="btn" aria-label="Press"><span class="cap"></span></button>
   </div>
 
-  <div class="hint" id="hint">press it. or tap space.</div>
+  <div class="hint" id="hint">press it. keep a steady rhythm.</div>
 </main>
 
 <div class="over" id="over" aria-live="polite">
@@ -535,24 +611,29 @@
   // ---- tiers: hidden layers that only exist far past your best -------------
   // each one adds a sound and a visual you've never seen until you get there
   const TIERS = [
-    { at: 1,  name: 'new territory' },
-    { at: 5,  name: 'heating up' },
-    { at: 10, name: 'on fire' },
-    { at: 20, name: 'unhinged' },
-    { at: 30, name: 'absurd' },
-    { at: 42, name: 'mythical' },
-    { at: 55, name: 'reality bends' },
-    { at: 70, name: 'event horizon' },
-    { at: 90, name: 'singularity' },
-    { at: 120, name: 'heat death' }
+    { at: 10,  name: 'warming up' },
+    { at: 20,  name: 'heating up' },
+    { at: 30,  name: 'on fire' },
+    { at: 42,  name: 'unhinged' },
+    { at: 55,  name: 'absurd' },
+    { at: 68,  name: 'mythical' },
+    { at: 82,  name: 'reality bends' },
+    { at: 100, name: 'event horizon' },
+    { at: 118, name: 'singularity' },
+    { at: 135, name: 'heat death' },
+    { at: 155, name: 'the other side' },
+    { at: 178, name: 'rewind' },
+    { at: 205, name: 'it notices you' }
   ];
+  // milestones are fixed counts (a lucky first run can still see the black hole), but every new
+  // record nudges all of them a few presses further out
+  let drift = parseInt(store.get('onemore.drift') || '0', 10) || 0;
+  const tierCount = i => TIERS[i].at + drift;
   let runTier = 0, runBest = 0, runFresh = [];
   let discovered = parseInt(store.get('onemore.tiers') || '0', 10) || 0;
   const tierAt = n => {
-    if (runBest <= 0) return 0;
-    const over = n - runBest;
     let t = 0;
-    for (let i = 0; i < TIERS.length; i++) if (over >= TIERS[i].at) t = i + 1;
+    for (let i = 0; i < TIERS.length; i++) if (n >= tierCount(i)) t = i + 1;
     return t;
   };
 
@@ -574,8 +655,11 @@
     tierSound(t);
     spawn(40 + t * 25, 5 + t, ['#ffd36b', '#ff8a6b', '#fff1c2', '#ff4b3e'], 70, 0.03);
     if (t >= 4) startDrone();
-    if (t >= 8) openVoid();
-    if (t >= 9) singularity(true);
+    if (t >= 8 && t < 13) openVoid();
+    if (t >= 9 && t < 13) singularity(true);
+    if (t === 11) enterWhite();
+    if (t === 12) enterRewind();
+    if (t === 13) enterNotice();
     publish('tier');
   }
 
@@ -588,12 +672,93 @@
 
   // per-press extras, stacking by tier
   function tierPress(t, h) {
+    if (t === 7 && !rapid) {
+      const k = (count - tierCount(6)) / (tierCount(7) - tierCount(6));     // 0 → 1 as the hole gets close
+      heartbeat(0.35 + k * 0.65);
+      if (!reduce) stage.animate([{ scale: `${1.015 + k * 0.03}` }, { scale: '1' }], { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', composite: 'add' });
+    }
+    if (t >= 13) { noticePress(); return; }       // quiet. no layers
+    if (t === 12) implode();
     if (t >= 2 && !rapid) subKick();
     if (t >= 3) { if (!rapid) sparkleArp(count); shockwave(t); }
     if (t >= 5 && !rapid) whoosh();
     if (t >= 6) spawn(18, 7, ['#ff4b3e', '#ffd36b', '#6bd3ff', '#b26bff', '#6bff9e'], 80, 0.12);
     if (t === 7 && count % 4 === 0 && !reduce) $('invert').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120 });
     if (t >= 10) megaShock();
+  }
+
+  // ---- the other side ----------------------------------------------------
+  function enterWhite() {
+    document.body.classList.add('white');
+    noiseBurst(1.2, 200, 9000, 'highpass', 0.3);        // the crack, played backwards
+  }
+  // old runs float up past you
+  let echoTimer = 0;
+  function echoes() {
+    if (!document.body.classList.contains('white') || reduce || !runs.length) return;
+    if (++echoTimer % 45) return;
+    const el = document.createElement('div');
+    el.className = 'echo';
+    el.textContent = runs[(Math.random() * runs.length) | 0];
+    el.style.left = (10 + Math.random() * 80) + 'vw';
+    el.style.top = '100vh';
+    el.style.fontSize = (24 + Math.random() * 60) + 'px';
+    document.body.appendChild(el);
+    el.animate([{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: 'translateY(-120vh)', opacity: 0 }],
+      { duration: 9000 + Math.random() * 5000, easing: 'linear' }).onfinish = () => el.remove();
+  }
+
+  // ---- rewind: the counter runs backwards, presses still count -------------
+  let rewindBase = 0;
+  const shownCount = () => runTier === 12 && rewindBase ? rewindBase - (count - rewindBase) : count;
+  function enterRewind() {
+    rewindBase = count;
+    document.body.classList.remove('white');
+    document.body.classList.add('rewind');
+    voidCv.style.transform = 'scaleX(-1)';                 // the hole spins the other way
+  }
+  // particles fly *into* the button instead of out
+  function implode() {
+    if (reduce) return;
+    const c = center(), cols = palette();
+    for (let i = 0; i < 24 && parts.length < MAX_PARTS; i++) {
+      const a = Math.random() * Math.PI * 2, d = c.rad * (2.2 + Math.random() * 1.5), sp = d / 30;
+      parts.push({ x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp,
+        r: 1.5 + Math.random() * 2, life: 28, max: 28, g: 0, col: cols[i % 3], nodrag: true });
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+
+  // ---- it notices you -------------------------------------------------------
+  const LINES = [
+    'oh.', 'you’re still here.', 'i didn’t think anyone would get this far.', 'there’s nothing after this.',
+    'really. nothing.', 'you can stop now.', 'why are you still pressing?', 'i’m running out of things to say.',
+    'NAME.', 'please.', 'okay.', 'i’ll just watch.', '…'
+  ];
+  let noticeBase = 0, lineI = 0;
+  function enterNotice() {
+    noticeBase = count; lineI = 0;
+    closeVoid(true); singularity(false); stopDrone(); stopRumble();
+    document.body.classList.remove('white', 'rewind');
+    document.body.classList.add('notice');
+    voidCv.style.transform = '';
+    say(LINES[lineI++]);
+  }
+  function noticePress() {
+    const k = count - noticeBase;
+    $('stage').querySelector('.well').style.scale = Math.max(0.5, 1 - k * 0.006);   // it backs away
+    heartbeat(Math.min(1, 0.3 + k / 80));
+    if (k > 0 && k % 6 === 0 && lineI < LINES.length) say(LINES[lineI++]);
+  }
+  function say(line) {
+    const nm = (nameEl.value.trim() || '').replace(/^player \w+$/, '');
+    line = line.replace('NAME', nm || 'hey');
+    const w = $('whisper');
+    const ti = $('title');
+    w.style.top = (ti.offsetTop + ti.offsetHeight / 2 - 11) + 'px';
+    w.textContent = line;
+    w.animate([{ opacity: 0, filter: 'blur(4px)' }, { opacity: 0.9, filter: 'blur(0)' }], { duration: 1200, easing: 'ease-out', fill: 'forwards' });
+    document.title = line;
   }
 
   function megaShock() {
@@ -621,16 +786,23 @@
     count = 0;
     alive = true;
     numEl.getAnimations().forEach(a => a.cancel());
+    rhythm = 0; rhythmAvg = 0; rhythmEl.className = 'rhythm'; rhythmEl.textContent = '';
     numEl.textContent = '0';
     heatTarget = 0;
     frozen = false;
     runTier = 0; runBest = best; runFresh = [];
-    debugRun = immortal;
-    document.title = immortal ? 'One More (debug)' : 'One More';
+    debugRun = immortal || incognito;
+    document.title = incognito ? 'One More (incognito)' : immortal ? 'One More (debug)' : 'One More';
     stopDrone();
     vignette.style.filter = '';
     closeVoid(false);
     singularity(false);
+    document.body.classList.remove('white', 'rewind', 'notice');
+    voidCv.style.transform = '';
+    rewindBase = 0; noticeBase = 0;
+    document.querySelector('.well').style.scale = '';
+    $('whisper').getAnimations().forEach(a => a.cancel());
+    $('whisper').textContent = '';
     updateRing();
     showBest();
     btn.classList.remove('dead', 'down');
@@ -641,16 +813,32 @@
     publish('reset');
   }
 
-  let pendingDeath = null, immortal = false, debugRun = false, lastPress = 0, rapid = false;
+  let pendingDeath = null, immortal = false, incognito = false, debugRun = false, lastPress = 0, rapid = false;
+  // rhythm: steady presses build a streak that slows how fast the risk climbs
+  let rhythm = 0, rhythmAvg = 0;
+  const rhythmEl = $('rhythm');
+  function updateRhythm(dt) {
+    const steady = rhythm > 0 && dt < 1500 && dt > rhythmAvg * 0.6 && dt < rhythmAvg * 1.5;
+    if (steady) { rhythm++; rhythmAvg = rhythmAvg * 0.8 + dt * 0.2; }
+    else {
+      if (rhythm >= 8) { rhythmEl.textContent = 'rhythm lost'; rhythmEl.className = 'rhythm on'; }
+      rhythm = dt < 1500 ? 1 : 0; rhythmAvg = dt;
+    }
+    if (rhythm >= 8) {
+      rhythmEl.textContent = `rhythm ${rhythm}`;
+      rhythmEl.className = 'rhythm on' + (rhythm >= 30 ? ' hot' : '');
+    } else if (rhythm < 3 && rhythmEl.textContent !== 'rhythm lost') rhythmEl.className = 'rhythm';
+  }
   function press() {
     if (pendingDeath) { clearTimeout(pendingDeath.timer); const { d } = pendingDeath; pendingDeath = null; die(d); return; }
     if (!alive) return;
     const nowT = performance.now();
     rapid = nowT - lastPress < 80;
+    if (count > 0) updateRhythm(nowT - lastPress);
     lastPress = nowT;
     count++;
-    numEl.textContent = count;
-    heatTarget = heatFor(count);
+    numEl.textContent = shownCount();
+    heatTarget = runTier >= 13 ? 0 : heatFor(count);
     const h = heatTarget;
     if (best > 0 && count > best) {
       bestLive.textContent = 'new best';
@@ -661,22 +849,22 @@
     }
     bump(h);
     click(count, h);
-    if (count % 10 === 0) chord(0.5);      // every ten gets a little chime
+    if (count % 10 === 0 && runTier < 13) chord(0.5);      // every ten gets a little chime
     const t = tierAt(count);
     if (t > runTier) tierUp(t);
     tierPress(runTier, h);
     pressPulse = 1;
-    if (runTier >= 2) zoomTrail(runTier, h);
-    if (runTier >= 3) hitStopUntil = performance.now() + 30 + runTier * 6;
+    if (runTier >= 2 && runTier < 13) zoomTrail(runTier, h);
+    if (runTier >= 3 && runTier < 13) hitStopUntil = performance.now() + 30 + runTier * 6;
     const surge = Math.min(1.5, Math.max(0, count - runBest) / 70);
-    burst(h, runTier, surge);
-    kick(h, surge);
+    if (runTier < 13) { burst(h, runTier, surge); kick(h, surge); }
     updateRing();
     if (navigator.vibrate) navigator.vibrate(6);
     if (count === 1) { hint.style.opacity = 0; $('title').classList.add('gone'); }
     publish('press');
 
-    risk += Math.random() < BIG_JUMP_CHANCE ? BIG_JUMP : tinyJump();
+    const steadiness = Math.max(0.3, 1 / (1 + rhythm / 30));   // 1 = no streak, 0.3 = deep in the groove
+    risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, steadiness) ? BIG_JUMP * steadiness : tinyJump() * steadiness;
     risk = Math.min(MAX_RISK, Math.max(MIN_RISK, risk));
 
     if (!immortal && Math.random() < risk) {
@@ -716,6 +904,8 @@
     thud(d);
     heatTarget = 0;
     stopDrone();
+    if (runTier >= 13) say('finally.');
+    document.body.classList.remove('rewind');
     if (bh) collapseVoid();
     singularity(false);
     if (navigator.vibrate) navigator.vibrate(d > 0.3 ? [60, 30, 120, 40, 200] : [30, 40, 60]);
@@ -727,7 +917,11 @@
 
     const prevBest = best;
     const isBest = count > best;
-    if (isBest && !debugRun) { best = count; store.set('onemore.best', best); }
+    if (isBest && !debugRun) {
+      best = count; store.set('onemore.best', best);
+      drift += 3 + Math.floor(Math.random() * 5);   // 3–7 further out next time
+      store.set('onemore.drift', drift);
+    }
     else if (isBest) best = count;   // debug: show it this session, never save it
     $('final').textContent = count;
     $('odds').textContent = fmtPct(risk);
@@ -767,7 +961,7 @@
   try { runs = JSON.parse(store.get('onemore.runs') || '[]').slice(-14); } catch { runs = []; }
   function pushHistory(n) {
     runs.push(n); runs = runs.slice(-14);
-    store.set('onemore.runs', JSON.stringify(runs));
+    if (!debugRun) store.set('onemore.runs', JSON.stringify(runs));
     const max = Math.max(...runs, 1);
     const top = Math.max(...runs);
     $('history').innerHTML = runs.map((v, i) =>
@@ -855,7 +1049,7 @@
   function postFx() {
     pressPulse *= 0.86;
     if (reduce) { stage.style.filter = warping ? 'url(#warp)' : ''; return; }
-    const live = alive && !frozen;
+    const live = alive && !frozen && runTier < 13;
     const t = live ? runTier : 0, hh = live ? heat : 0, pp = live ? pressPulse : 0;
     const f = [];
     // the black hole (tier 8) is the climax: it gets the screen to itself, then the heavy lens
@@ -880,6 +1074,18 @@
     tiltX += (tiltTX - tiltX) * 0.06; tiltY += (tiltTY - tiltY) * 0.06;
     stage.style.rotate = Math.abs(tiltX) + Math.abs(tiltY) > 0.05 ? `${tiltX.toFixed(2)} ${tiltY.toFixed(2)} 0 ${Math.hypot(tiltX, tiltY).toFixed(2)}deg` : '';
     // film grain + scanlines
+    // pre-hole extras, each a different *kind* of effect; all off once the hole opens
+    const pre = live && t < 8;
+    // heat haze on the number ("heating up")
+    const haze = pre && t >= 2 ? 2 + hh * 4 : 0;
+    $('hazeMap').setAttribute('scale', haze.toFixed(1));
+    if (haze) $('hazeTurb').setAttribute('seed', (performance.now() / 90 | 0) % 100);
+    numEl.style.filter = haze ? 'url(#haze)' : '';
+    $('leak').style.opacity = pre && t >= 3 ? 0.35 + hh * 0.2 : 0;                    // light leak ("on fire")
+    stage.style.translate = pre && t >= 4                                             // gate weave ("unhinged")
+      ? `${(Math.sin(performance.now() / 310) * 1.6).toFixed(2)}px ${(Math.sin(performance.now() / 470) * 1.2).toFixed(2)}px` : '';
+    $('rays').style.opacity = pre && t >= 5 ? 0.6 + pp * 0.4 : 0;                     // god rays ("absurd")
+    stage.classList.toggle('dof', pre && t >= 6);                                     // depth of field ("mythical")
     grainEl.style.opacity = inVoid ? 0 : post ? 0.16 : hh * 0.08;
     if (hh > 0) { grainI = (grainI + 1) % grainFrames.length; grainEl.style.backgroundImage = grainFrames[grainI]; }
     scanEl.style.opacity = t >= 10 ? 0.35 + Math.random() * 0.1 : 0;   // CRT only at the very end
@@ -903,12 +1109,9 @@
     vignette.style.opacity = heat * 0.9;
     aura.style.opacity = heat * (0.75 + Math.sin(performance.now() / (260 - heat * 140)) * 0.25);
     if (alive && !frozen && !reduce) {
-      if (runTier >= 2 && Math.random() < 0.08 * runTier) ember();
+      if (runTier >= 2 && runTier < 13 && Math.random() < 0.08 * Math.min(runTier, 8)) ember();
+      echoes();
       if (runTier >= 4) vignette.style.filter = `hue-rotate(${(performance.now() / 30) % 360}deg)`;
-      if (runTier >= 5 && Math.random() < 0.004) {
-        $('flash').animate([{ opacity: 0.5 }, { opacity: 0 }, { opacity: 0.3 }, { opacity: 0 }], { duration: 260 });
-        zap();
-      }
     }
     requestAnimationFrame(heatLoop);
   }
@@ -956,7 +1159,8 @@
   // major pentatonic climbing; wraps up an octave so long runs stay musical
   const SCALE = [0, 2, 4, 7, 9];
   function click(n, h = 0) {
-    if (!ac) return;
+    if (!ac || runTier >= 13) return;
+    if (runTier === 12) { reverseClick(n); return; }
     const t = ac.currentTime;
     const step = (n - 1) % 15;
     const semis = SCALE[step % 5] + 12 * Math.floor(step / 5);
@@ -1000,10 +1204,12 @@
   // each tier gets its own voicing, rising: you only learn what it sounds like by getting there
   const TIER_CHORDS = [
     [0, 4, 7, 12], [0, 5, 7, 14], [0, 4, 7, 11, 14], [0, 2, 7, 9, 16], [0, 4, 6, 11, 18], [0, 7, 12, 16, 19, 24],
-    [0, 3, 7, 10, 14], [-12, 0, 1, 7, 13], [-12, 0, 6, 12, 18], [-12, 0, 12, 19, 24, 28, 31]
+    [0, 3, 7, 10, 14], [-12, 0, 1, 7, 13], [-12, 0, 6, 12, 18], [-12, 0, 12, 19, 24, 28, 31],
+    [0, 4, 7, 11, 14, 18, 21], [12, 7, 3, 0, -5], [0]
   ];
   function tierSound(t) {
     if (!ac) return;
+    if (t === 13) { heartbeat(0.5); return; }
     const now = ac.currentTime, root = 220 * Math.pow(2, (t * 2) / 12);
     // riser
     const len = Math.floor(ac.sampleRate * 0.35);
@@ -1034,6 +1240,29 @@
     sg.gain.setValueAtTime(0.4, hit); sg.gain.exponentialRampToValueAtTime(0.0001, hit + 0.6);
     sub.connect(sg).connect(ac.destination); sub.start(hit); sub.stop(hit + 0.65);
   }
+  // the pluck played backwards: swells in, cuts off, scale descends
+  function reverseClick(n) {
+    const t = ac.currentTime, step = (n - 1) % 15;
+    const semis = 24 - (SCALE[step % 5] + 12 * Math.floor(step / 5));
+    const f = 330 * Math.pow(2, semis / 12);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.14);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.14);
+    g.gain.setValueAtTime(0.0001, t + 0.145);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.15);
+  }
+  function heartbeat(v) {
+    if (!ac) return;
+    const t = ac.currentTime;
+    [0, 0.16].forEach((off, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.setValueAtTime(i ? 52 : 60, t + off); o.frequency.exponentialRampToValueAtTime(34, t + off + 0.12);
+      g.gain.setValueAtTime(0.0001, t + off); g.gain.exponentialRampToValueAtTime((i ? 0.25 : 0.4) * v, t + off + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + off + 0.18);
+      o.connect(g).connect(ac.destination); o.start(t + off); o.stop(t + off + 0.2);
+    });
+  }
   function subKick() {
     if (!ac) return;
     const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
@@ -1053,6 +1282,7 @@
     });
   }
   function noiseBurst(len, from, to, type, vol) {
+    if (!ac) return;
     const t = ac.currentTime, n = Math.floor(ac.sampleRate * len);
     const buf = ac.createBuffer(1, n, ac.sampleRate), ch = buf.getChannelData(0);
     for (let i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / n);
@@ -1063,7 +1293,6 @@
     src.buffer = buf; src.connect(f).connect(g).connect(ac.destination); src.start(t);
   }
   function whoosh() { if (ac) noiseBurst(0.25, 3000, 400, 'bandpass', 0.12); }
-  function zap() { if (ac) noiseBurst(0.4, 8000, 150, 'lowpass', 0.25); }
 
   let drone = null;
   function startDrone() {
@@ -1149,12 +1378,16 @@
     voidCv.width = innerWidth * dpr; voidCv.height = innerHeight * dpr;
     voidCv.style.width = innerWidth + 'px'; voidCv.style.height = innerHeight + 'px';
   }
-  addEventListener('resize', () => { sizeVoid(); if (bh) bh.c = center(); });
+  addEventListener('resize', () => { sizeVoid(); if (bh) bh.c = numCenter(); });
 
+  function numCenter() {
+    const r = numEl.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, rad: Math.max(r.height * 0.62, r.width * 0.56) };
+  }
   function openVoid() {
     if (bh || reduce) return;
     sizeVoid();
-    const c = center(), R = Math.hypot(innerWidth, innerHeight);
+    const c = numCenter(), R = Math.hypot(innerWidth, innerHeight);
     const bgCol = getComputedStyle(document.documentElement).getPropertyValue('--bg-glow').trim() || '#2a1d14';
     // crack the background into wedges radiating from the button, then throw them away
     const n = 18, shards = [];
@@ -1192,10 +1425,13 @@
   function drawVoid(now) {
     voidRaf = 0;
     if (!bh) return;
-    if (!bh.collapse) bh.c = center();
+    if (!bh.collapse) {                         // follow the number, smoothed so its jitter doesn't drag the hole around
+      const n = numCenter();
+      bh.c = bh.c ? { x: bh.c.x + (n.x - bh.c.x) * 0.15, y: bh.c.y + (n.y - bh.c.y) * 0.15, rad: bh.c.rad + (n.rad - bh.c.rad) * 0.1 } : n;
+    }
     const W = voidCv.width, H = voidCv.height, c = bh.c, R = bh.R;
     const t = (now - bh.t0) / 1000;
-    const rad = 105 * (bh.c.rad / 90);           // event horizon sits just outside the button
+    const rad = c.rad;                            // event horizon wraps the counter
     let power = Math.min(1, t / 1.6);
     let fade = 1, swallow = 0;
     if (bh.collapse) { swallow = Math.min(1, (now - bh.collapse) / 700); fade = 1 - Math.max(0, (now - bh.collapse - 900) / 900); }
@@ -1328,7 +1564,22 @@
     }
     if (!raf) raf = requestAnimationFrame(tick);
   }
-  const burst = (h = 0, t = 0, surge = 0) => spawn(10 + Math.round(h * h * 90) + t * 10 + Math.round(surge * 80), 3.2 + h * 5 + t * 0.6 + surge * 3, h > 0.5 ? ['#ff8a6b', '#ffd1a8', '#ff4b3e', '#fff1c2'] : ['#ff8a6b', '#ffd1a8', '#ff4b3e'], 38 + h * 30, 0.06);
+  // red → amber → gold → white-hot on the way to the hole; violet → cyan inside it; then it keeps drifting
+  function palette() {
+    const lerp = (a, b, k) => a + (b - a) * Math.min(1, Math.max(0, k));
+    const eh = tierCount(7), sg = tierCount(8);
+    let hue, sat, lit;
+    if (count >= sg) { hue = (190 + (count - sg) * 4) % 360; sat = 100; lit = 70; }
+    else if (count >= eh) { const k = (count - eh) / (sg - eh); hue = lerp(275, 190, k); sat = 95; lit = lerp(72, 80, k); }
+    else {
+      // warm → white-hot, driven by whichever is further along: past your best, or toward the hole
+      const k = Math.max(runBest > 0 ? (count - runBest) / 70 : 0, (count - tierCount(0)) / (eh - tierCount(0)));
+      if (k <= 0) return ['#ff8a6b', '#ffd1a8', '#ff4b3e'];
+      hue = lerp(6, 52, k * 1.3); sat = lerp(100, 70, k); lit = lerp(62, 92, k * k);
+    }
+    return [-14, 0, 14].map((d, i) => `hsl(${(hue + d + 360) % 360}, ${sat}%, ${Math.min(97, lit + (i - 1) * 8)}%)`);
+  }
+  const burst = (h = 0, t = 0, surge = 0) => spawn(10 + Math.round(h * h * 90) + t * 10 + Math.round(surge * 80), 3.2 + h * 5 + t * 0.6 + surge * 3, palette(), 38 + h * 30, 0.06);
   const shatter = (d = 0) => spawn(60 + Math.round(d * 220), 6 + d * 9, d > 0.3 ? ['#5d544c', '#8a7b6b', '#ff4b3e', '#ff8a6b', '#fff1c2'] : ['#5d544c', '#8a7b6b', '#ff4b3e'], 70 + d * 60, 0.18);
   function ember() {
     const c = center();
@@ -1337,7 +1588,7 @@
       x: c.x + Math.cos(a) * c.rad, y: c.y + Math.sin(a) * c.rad,
       vx: (Math.random() - 0.5) * 0.6, vy: -0.6 - Math.random() * 1.4,
       r: 1 + Math.random() * 2, life: 90, max: 90, g: -0.01,
-      col: ['#ff8a6b', '#ffd36b', '#ff4b3e'][(Math.random() * 3) | 0]
+      col: palette()[(Math.random() * 3) | 0]
     });
     if (!raf) raf = requestAnimationFrame(tick);
   }
@@ -1349,7 +1600,8 @@
     parts = parts.filter(p => p.life > 0);
     for (const p of parts) {
       const ts = performance.now() < hitStopUntil ? 0 : timeScale;
-      p.vx *= 1 - 0.04 * ts; p.vy = p.vy * (1 - 0.04 * ts) + p.g * ts;
+      const gdir = document.body.classList.contains('white') ? -1 : 1;
+      if (!p.nodrag) { p.vx *= 1 - 0.04 * ts; p.vy = p.vy * (1 - 0.04 * ts) + p.g * gdir * ts; }
       if (bh && bh.suck) { const c = bh.c; p.vx += (c.x - p.x) * 0.0012 * ts; p.vy += (c.y - p.y) * 0.0012 * ts; }
       p.x += p.vx * ts; p.y += p.vy * ts; p.life -= ts;
       const k = p.life / p.max;
@@ -1395,6 +1647,36 @@
     codeEl.value = c; joinRoom(c);
   });
   $('leave').addEventListener('click', leaveRoom);
+
+  // erase progress: the button only reveals a slider; dragging it all the way is the real confirmation
+  const slideBox = $('slideBox'), slide = $('slide');
+  $('eraseBtn').addEventListener('click', () => {
+    slideBox.hidden = !slideBox.hidden;
+    slide.value = 0;
+    $('eraseBtn').textContent = slideBox.hidden ? 'Erase progress' : 'Cancel';
+  });
+  const snapBack = () => {
+    if (+slide.value >= 98) return;
+    const from = +slide.value, t0 = performance.now();
+    (function step(now) {                 // spring back if they let go early
+      const k = Math.min(1, (now - t0) / 200);
+      slide.value = from * (1 - (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  };
+  slide.addEventListener('pointerup', snapBack);
+  slide.addEventListener('touchend', snapBack);
+  slide.addEventListener('change', snapBack);
+  slide.addEventListener('input', () => { if (+slide.value >= 98) eraseProgress(); });
+  function eraseProgress() {
+    ['onemore.best', 'onemore.tiers', 'onemore.drift', 'onemore.runs'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+    best = 0; discovered = 0; drift = 0; runs = [];
+    slideBox.hidden = true; slide.value = 0;
+    $('eraseBtn').textContent = 'Erase progress';
+    if (alive) reset(); else { showBest(); updateRing(); }
+    publish('reset');
+    toast('progress erased', 'bad');
+  }
 
   const myState = (ev, extra) => ({ t: 'state', uid, name: nameEl.value.trim() || 'anon', count, best, alive, tier: runTier, h: +heatFor(count).toFixed(2), ev, ...extra });
 
@@ -1718,6 +2000,8 @@
   // any run touched by these is a debug run: its best and tiers are never saved
   const dbgTag = () => { debugRun = true; document.title = 'One More (debug)'; };
   window.onemore = {
+    // incognito: play normally, but nothing this session is saved (best, tiers, milestone drift, history)
+    incognito(on = true) { incognito = on; if (on) debugRun = true; document.title = on ? 'One More (incognito)' : 'One More'; return `incognito ${on ? 'on' : 'off'}`; },
     immortal(on = true) { immortal = on; if (on) dbgTag(); return `immortal ${on ? 'on' : 'off'}`; },
     skip(n = 10) { if (!alive) reset(); dbgTag(); count += Math.max(1, n) - 1; press(); return count; },
     to(tier) {                          // jump straight past your best to a tier, by name or number (1-based)
@@ -1725,14 +2009,13 @@
       if (i < 0 || i >= TIERS.length) return 'tiers: ' + TIERS.map(t => t.name).join(', ');
       if (!alive) reset();
       dbgTag();
-      if (runBest <= 0) runBest = best = 1;
-      const target = runBest + TIERS[i].at;
+      const target = tierCount(i);
       if (count < target) { count = target - 1; press(); }
       return `${TIERS[i].name} at ${count}`;
     },
     risk(p) { if (p !== undefined) { risk = Math.min(MAX_RISK, Math.max(MIN_RISK, p)); dbgTag(); } return fmtPct(risk); },
     die() { if (alive) { alive = false; dbgTag(); die(drama(count)); } },
-    help() { return 'onemore.immortal(on?), .skip(n), .to(name|number), .risk(p?), .die()'; }
+    help() { return 'onemore.incognito(on?), .immortal(on?), .skip(n), .to(name|number), .risk(p?), .die()'; }
   };
   window.__onemore = window.onemore;
 })();
