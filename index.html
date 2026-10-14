@@ -334,6 +334,23 @@
     font-size: 17px; font-weight: 500; color: var(--ink); white-space: nowrap; opacity: 0; pointer-events: none;
     max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
   }
+  .pane { display: flex; flex-direction: column; gap: 14px; flex: 1; min-height: 0; }
+  .pane[hidden] { display: none; }
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat, .now-chapter { background: var(--field); border: 1px solid var(--panel-line); border-radius: 12px; padding: 10px 12px; }
+  .stat small, .now-chapter small { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .stat b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin-top: 2px; }
+  .now-chapter span { display: block; font-size: 15px; font-weight: 600; margin-top: 3px; }
+  .drawer h3 { margin: 4px 0 0; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+  .acts li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--field); border: 1px solid var(--panel-line); transition: border-color 300ms ease, opacity 300ms ease; }
+  .acts .num { font-size: 12px; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; }
+  .acts .nm { font-size: 14px; font-weight: 600; }
+  .acts .st { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .acts li.cur { border-color: rgba(255,138,107,0.6); }
+  .acts li.cur .st { color: var(--red-hi); }
+  .acts li.done .st { color: #5fd38a; }
+  .fine { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
   .mode { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 14px; cursor: pointer; }
   .mode b { display: block; font-size: 14px; }
   .mode small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -563,7 +580,18 @@
 
 <aside class="drawer" id="drawer">
   <button class="tab" id="tab" aria-label="Friends"><span class="chev">&rsaquo;</span><span class="badge" id="badge"></span></button>
-  <h2>Friends</h2>
+  <h2 id="paneTitle">Friends</h2>
+  <div class="pane" id="storyPane" hidden>
+    <div class="stat-row">
+      <div class="stat"><small>story best</small><b id="sBest">0</b></div>
+      <div class="stat"><small>this run</small><b id="sNow">0</b></div>
+    </div>
+    <div class="now-chapter"><small>chapter</small><span id="sChapter">—</span></div>
+    <h3>checkpoints</h3>
+    <ol class="acts" id="sActs"></ol>
+    <p class="fine">entering an act is a checkpoint: the odds ease off. half of all fatal presses miss.</p>
+  </div>
+  <div class="pane" id="friendsPane">
   <input class="field" id="name" maxlength="16" placeholder="your name" autocomplete="off" spellcheck="false">
   <div id="joinBox" style="display:flex;flex-direction:column;gap:8px">
     <input class="field code" id="code" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false">
@@ -575,6 +603,7 @@
   <button class="pill quiet" id="leave" style="display:none;flex:none">Leave room</button>
   <div class="status" id="status">same code, same room. peer to peer.</div>
   <ul class="players" id="players"></ul>
+  </div>
   <label class="mode" id="modeRow">
     <span><b>Story mode</b><small id="modeNote">checkpoints · solo only</small></span>
     <input type="checkbox" id="storyToggle" role="switch">
@@ -582,7 +611,7 @@
   <div class="erase">
     <button class="pill quiet" id="eraseBtn">Erase progress</button>
     <div class="slide" id="slideBox" hidden>
-      <span class="slide-label">slide to erase everything</span>
+      <span class="slide-label" id="slideLabel">slide to erase</span>
       <input type="range" id="slide" min="0" max="100" value="0" aria-label="Slide to erase progress">
     </div>
   </div>
@@ -649,7 +678,8 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
   let story = store.get('onemore.story') === '1';
-  const bestKey = () => story ? 'onemore.best.story' : 'onemore.best';
+  const modeKey = name => story ? `onemore.${name}.story` : `onemore.${name}`;   // story and endless never share progress
+  const bestKey = () => modeKey('best');
   let best = parseInt(store.get(bestKey()) || '0', 10) || 0;
 
   const bestLive = $('bestLive');
@@ -680,14 +710,14 @@
     { at: null, off: 65,  name: 'alarm' },
     { at: null, off: 100, name: 'launch' }
   ];
-  const CLASSIC_MAX = 11;      // classic stops at "the other side" and loops event horizon → the other side
+  const ENDLESS_MAX = 11;      // endless stops at "the other side" and loops event horizon → the other side
   const ACT_STARTS = [8, 13, 14];   // story checkpoints: entering each act halves the hidden risk
   // milestones are fixed counts (a lucky first run can still see the black hole), but every new
   // record nudges all of them a few presses further out
-  let drift = parseInt(store.get('onemore.drift') || '0', 10) || 0;
+  let drift = parseInt(store.get(modeKey('drift')) || '0', 10) || 0;
   const tierCount = i => TIERS[i].at + drift;
   let runTier = 0, runBest = 0, runFresh = [];
-  let discovered = parseInt(store.get('onemore.tiers') || '0', 10) || 0;
+  let discovered = parseInt(store.get(modeKey('tiers')) || '0', 10) || 0;
   let runCycle = 0, bunkerStart = 0;
   const loopLen = () => tierCount(10) - tierCount(7) + 20;          // one lap of the void, plus a breath on the other side
   const tierAt = n => {
@@ -696,10 +726,10 @@
       for (let i = 14; i < TIERS.length; i++) if (n - bunkerStart >= TIERS[i].off) t = i + 1;
       return t;
     }
-    const max = story ? 13 : CLASSIC_MAX;
+    const max = story ? 13 : ENDLESS_MAX;
     let t = 0;
     for (let i = 0; i < max; i++) if (n >= tierCount(i)) t = i + 1;
-    if (!story && n >= tierCount(7)) {                                 // classic: lap the void forever
+    if (!story && n >= tierCount(7)) {                                 // endless: lap the void forever
       const into = (n - tierCount(7)) % loopLen();
       t = 8;
       for (let i = 8; i <= 10; i++) if (into >= tierCount(i) - tierCount(7)) t = i + 1;
@@ -709,7 +739,7 @@
   const cycleAt = n => !story && n >= tierCount(7) ? Math.floor((n - tierCount(7)) / loopLen()) : 0;
   const crazy = () => 1 + runCycle * 0.45;                             // each lap of the void gets wilder
 
-  // classic: back round to the event horizon, harder
+  // endless: back round to the event horizon, harder
   function newLap(c) {
     runCycle = c;
     runTier = 7;
@@ -721,7 +751,7 @@
     runTier = t;
     const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
     if (story && ACT_STARTS.includes(t)) { risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900); }
-    if (t > discovered) { discovered = t; if (!debugRun) store.set('onemore.tiers', t); runFresh.push(t); }
+    if (t > discovered) { discovered = t; if (!debugRun) store.set(modeKey('tiers'), t); runFresh.push(t); }
     const b = $('banner');
     b.textContent = name;
     // sits in the title's slot (the title is faded out mid-run), clear of the number and button
@@ -1050,7 +1080,7 @@
     if (isBest && !debugRun) {
       best = count; store.set(bestKey(), best);
       drift += 3 + Math.floor(Math.random() * 5);   // 3–7 further out next time
-      store.set('onemore.drift', drift);
+      store.set(modeKey('drift'), drift);
     }
     else if (isBest) best = count;   // debug: show it this session, never save it
     $('final').textContent = count;
@@ -1088,10 +1118,11 @@
   }
 
   let runs = [];
-  try { runs = JSON.parse(store.get('onemore.runs') || '[]').slice(-14); } catch { runs = []; }
+  const loadRuns = () => { try { return JSON.parse(store.get(modeKey('runs')) || '[]').slice(-14); } catch { return []; } };
+  runs = loadRuns();
   function pushHistory(n) {
     runs.push(n); runs = runs.slice(-14);
-    if (!debugRun) store.set('onemore.runs', JSON.stringify(runs));
+    if (!debugRun) store.set(modeKey('runs'), JSON.stringify(runs));
     const max = Math.max(...runs, 1);
     const top = Math.max(...runs);
     $('history').innerHTML = runs.map((v, i) =>
@@ -2131,7 +2162,7 @@
   codeEl.addEventListener('input', () => { codeEl.value = codeEl.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   codeEl.addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(codeEl.value); });
 
-  $('tab').addEventListener('click', () => drawer.classList.toggle('open'));
+  $('tab').addEventListener('click', () => { drawer.classList.toggle('open'); if (story) renderStory(); });
   $('join').addEventListener('click', () => joinRoom(codeEl.value));
   $('create').addEventListener('click', () => {
     let c = ''; for (let i = 0; i < 4; i++) c += CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0];
@@ -2139,32 +2170,79 @@
   });
   $('leave').addEventListener('click', leaveRoom);
 
+  // story dashboard: replaces the friends pane while story mode is on
+  const ACTS = [
+    { tier: 0,  name: 'the button' },
+    { tier: 8,  name: 'the void' },
+    { tier: 13, name: 'the machine' },
+    { tier: 14, name: 'the bunker' }
+  ];
+  let furthestAct = parseInt(store.get('onemore.act') || '0', 10) || 0;
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+  function actOf(t) { let a = 0; ACTS.forEach((x, i) => { if (t >= x.tier) a = i; }); return a; }
+  function renderStory() {
+    const on = story;
+    $('storyPane').hidden = !on;
+    $('friendsPane').hidden = on;
+    $('paneTitle').textContent = on ? 'Story' : 'Friends';
+    $('tab').setAttribute('aria-label', on ? 'Story' : 'Friends');
+    if (!on) return;
+    const cur = actOf(runTier);
+    if (cur > furthestAct && !debugRun) { furthestAct = cur; store.set('onemore.act', cur); }
+    $('sBest').textContent = best;
+    $('sNow').textContent = count;
+    $('sChapter').textContent = runTier ? TIERS[runTier - 1].name : (count ? 'the button' : 'not started');
+    // only acts you've reached are listed: no hint of what's further
+    $('sActs').innerHTML = ACTS.slice(0, Math.max(furthestAct, cur) + 1).map((a, i) => {
+      const state = !alive && count ? (i <= cur ? 'done' : '') : i < cur ? 'done' : i === cur ? 'cur' : '';
+      const label = state === 'cur' ? 'now' : state === 'done' ? (i === 0 ? 'start' : 'checkpoint') : 'reached before';
+      return `<li class="${state}"><span class="num">${ROMAN[i]}</span><span class="nm">${a.name}</span><span class="st">${label}</span></li>`;
+    }).join('');
+  }
+  window.__renderStory = renderStory;
+
   const storyToggle = $('storyToggle');
   storyToggle.checked = story;
+  renderStory();
+  modeNote();
   function setStory(on) {
     story = on;
     storyToggle.checked = on;
     store.set('onemore.story', on ? '1' : '0');
     best = parseInt(store.get(bestKey()) || '0', 10) || 0;
+    drift = parseInt(store.get(modeKey('drift')) || '0', 10) || 0;
+    discovered = parseInt(store.get(modeKey('tiers')) || '0', 10) || 0;
+    runs = loadRuns();
+    eraseLabel();
     if (alive || count) reset(); else { showBest(); updateRing(); }
+    renderStory();
+    modeNote();
+  }
+  function modeNote(locked = !!room) {
+    $('modeNote').textContent = locked ? 'not available in rooms · endless mode' : story ? 'checkpoints · solo only' : 'off: endless mode';
   }
   function lockStory(locked) {
     storyToggle.disabled = locked;
     $('modeRow').classList.toggle('locked', locked);
-    $('modeNote').textContent = locked ? 'not available in rooms' : 'checkpoints · solo only';
+    modeNote(locked);
   }
   storyToggle.addEventListener('change', () => {
     if (room) { storyToggle.checked = false; return; }
     setStory(storyToggle.checked);
-    toast(story ? 'story mode' : 'classic mode', story ? 'good' : '');
+    toast(story ? 'story mode' : 'endless mode', story ? 'good' : '');
   });
 
   // erase progress: the button only reveals a slider; dragging it all the way is the real confirmation
   const slideBox = $('slideBox'), slide = $('slide');
+  function eraseLabel() {
+    $('eraseBtn').textContent = `Erase ${story ? 'story' : 'endless'} progress`;
+    $('slideLabel').textContent = `slide to erase ${story ? 'story' : 'endless'} progress`;
+  }
+  eraseLabel();
   $('eraseBtn').addEventListener('click', () => {
     slideBox.hidden = !slideBox.hidden;
     slide.value = 0;
-    $('eraseBtn').textContent = slideBox.hidden ? 'Erase progress' : 'Cancel';
+    if (slideBox.hidden) eraseLabel(); else $('eraseBtn').textContent = 'Cancel';
   });
   const snapBack = () => {
     if (+slide.value >= 98) return;
@@ -2180,18 +2258,21 @@
   slide.addEventListener('change', snapBack);
   slide.addEventListener('input', () => { if (+slide.value >= 98) eraseProgress(); });
   function eraseProgress() {
-    ['onemore.best', 'onemore.best.story', 'onemore.tiers', 'onemore.drift', 'onemore.runs'].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+    ['best', 'tiers', 'drift', 'runs'].forEach(k => { try { localStorage.removeItem(modeKey(k)); } catch {} });
     best = 0; discovered = 0; drift = 0; runs = [];
+    if (story) { furthestAct = 0; try { localStorage.removeItem('onemore.act'); } catch {} }
     slideBox.hidden = true; slide.value = 0;
-    $('eraseBtn').textContent = 'Erase progress';
+    eraseLabel();
     if (alive) reset(); else { showBest(); updateRing(); }
     publish('reset');
-    toast('progress erased', 'bad');
+    toast(`${story ? 'story' : 'endless'} progress erased`, 'bad');
+    renderStory();
   }
 
   const myState = (ev, extra) => ({ t: 'state', uid, name: nameEl.value.trim() || 'anon', count, best, alive, tier: runTier, h: +heatFor(count).toFixed(2), ev, ...extra });
 
   function publish(ev, extra) {
+    if (story && drawer.classList.contains('open')) renderStory();
     if (!room) return;
     const msg = myState(ev, extra);
     if (isHub) broadcast(msg);
@@ -2530,7 +2611,7 @@
         press();
         return `${TIERS[i].name} at ${count}`;
       }
-      if (i >= CLASSIC_MAX && !story) return 'that one is story mode only';
+      if (i >= ENDLESS_MAX && !story) return 'that one is story mode only';
       const target = tierCount(i);
       if (count < target) { count = target - 1; press(); }
       return `${TIERS[i].name} at ${count}`;
