@@ -172,13 +172,11 @@
   .tiers span.fresh { background: var(--red); color: #fff; border-color: var(--red); }
   /* friends' buttons, dim and off to the side. visual only, never audible */
   .ghosts {
-    position: fixed; right: -18px; top: 50%; transform: translateY(-50%); z-index: 1;
-    display: flex; flex-direction: column; gap: 26px; pointer-events: none;
-    /* fades off toward the right edge */
-    -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.12));
-    mask-image: linear-gradient(90deg, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.12));
+    position: fixed; right: max(24px, 5vw); top: 50%; transform: translateY(-50%); z-index: 1;
+    display: flex; flex-direction: column; gap: 34px; pointer-events: none;
   }
-  .ghost { position: relative; width: 136px; text-align: center; opacity: 0.85; transition: opacity 400ms ease; pointer-events: auto; cursor: default; }
+  /* friends sit well clear of the edge, big enough to read, quiet enough not to compete */
+  .ghost { position: relative; width: 164px; text-align: center; opacity: 0.5; transition: opacity 400ms ease; pointer-events: auto; cursor: default; }
   .gtip {
     position: absolute; left: 50%; top: -30px; transform: translate(-50%, 4px); opacity: 0; pointer-events: none;
     background: var(--panel); border: 1px solid var(--panel-line); color: var(--ink);
@@ -187,15 +185,16 @@
   }
   .ghost:active .gtip { opacity: 1; transform: translate(-50%, 0); }
   @media (hover: hover) and (pointer: fine) { .ghost:hover .gtip { opacity: 1; transform: translate(-50%, 0); } }
-  .ghost.hot { opacity: 1; }
-  .ghost.out { opacity: 0.5; }
+  .ghost.hot { opacity: 0.7; }
+  .ghost.out { opacity: 0.28; }
+  @media (hover: hover) and (pointer: fine) { .ghost:hover { opacity: 0.85; } }
   .gwell {
     position: relative;
-    width: 116px; height: 116px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center;
+    width: 140px; height: 140px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center;
     background: radial-gradient(circle at 50% 40%, #0b0907, #1f1914); box-shadow: inset 0 3px 8px rgba(0,0,0,0.8);
   }
-  .gbtn { position: relative; width: 92px; height: 92px; transform: translateY(-9px); }
-  .gbtn::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--red-edge); transform: translateY(9px); transition: background-color 400ms ease; }
+  .gbtn { position: relative; width: 110px; height: 110px; transform: translateY(-10px); }
+  .gbtn::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--red-edge); transform: translateY(10px); transition: background-color 400ms ease; }
   .gcap {
     position: absolute; inset: 0; border-radius: 50%;
     background: radial-gradient(circle at 38% 28%, rgba(255,255,255,0.5), transparent 28%), radial-gradient(circle at 50% 45%, var(--red-hi), var(--red) 45%, var(--red-lo));
@@ -209,9 +208,10 @@
   .gct { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; display: inline-block; }
   .ghost.hot .gct { color: var(--red-hi); }
   @media (max-width: 700px) {
+    /* make room so the hint never sits under the friends row */
+    body.has-ghosts .stage { margin-bottom: 130px; gap: 28px; }
     .ghosts { top: auto; bottom: 12px; right: 50%; transform: translateX(50%); flex-direction: row; gap: 10px; }
-    .ghosts { -webkit-mask-image: none; mask-image: none; }
-    .ghost { width: 80px; opacity: 0.6; }
+    .ghost { width: 80px; opacity: 0.42; }
     .gwell { width: 68px; height: 68px; }
     .gbtn { width: 54px; height: 54px; }
     .gct { font-size: 18px; }
@@ -1330,9 +1330,20 @@
   // ---- sound ----------------------------------------------------------------
   let ac = null;
   function unlockAudio() {
-    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { ac = null; } }
-    if (ac && ac.state === 'suspended') ac.resume();
+    // iOS: treat this as media playback so the silent switch doesn't mute the game (Safari 16.4+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
+    if (!ac) {
+      try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch { ac = null; }
+      if (ac) {                                  // old iOS only unlocks after a sound actually plays inside a gesture
+        const b = ac.createBuffer(1, 1, 22050), src = ac.createBufferSource();
+        src.buffer = b; src.connect(ac.destination); src.start(0);
+      }
+    }
+    if (ac && ac.state !== 'running') ac.resume();
   }
+  // mobile browsers only count some events as a real gesture for audio, so try them all
+  ['touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, unlockAudio, { passive: true }));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume(); });
   // major pentatonic climbing; wraps up an octave so long runs stay musical
   const SCALE = [0, 2, 4, 7, 9];
   function click(n, h = 0) {
@@ -2502,7 +2513,7 @@
     if (reduce) return;
     const ct = g.querySelector('.gct'), h = st.h || 0, t = st.tier || 0;
     if (st.ev === 'press') {
-      g.querySelector('.gbtn').animate([{ transform: 'translateY(-1px)' }, { transform: 'translateY(-9px)' }], { duration: 220, easing: EASE });
+      g.querySelector('.gbtn').animate([{ transform: 'translateY(-1px)' }, { transform: 'translateY(-10px)' }], { duration: 220, easing: EASE });
       ct.animate([{ transform: `translateY(${-3 - h * 8}px) scale(${1.12 + h * 0.25}) rotate(${(Math.random() - 0.5) * h * 14}deg)` }, { transform: 'none' }], { duration: 240, easing: EASE });
       spawn(6 + Math.round(h * h * 45) + t * 5, 2.2 + h * 3, ['#ff8a6b', '#ffd1a8', '#ff4b3e'], 30 + h * 20, 0.06, ghostOrigin(g));
       if (t >= 3) shockwave(t, g.querySelector('.gwell'));
@@ -2572,6 +2583,7 @@
       g.classList.toggle('hot', st.alive && st.best > 0 && st.count > st.best);
     }
     for (const [id, g] of ghosts) if (!keep.has(id)) { g.remove(); ghosts.delete(id); }
+    document.body.classList.toggle('has-ghosts', ghosts.size > 0);
   }
 
   function renderPlayers() {
