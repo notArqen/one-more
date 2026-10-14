@@ -14,8 +14,8 @@ The story bible for **story mode**. Endless mode uses Acts I–II only, then loo
 | --- | --- | --- |
 | Where | Side menu → Story mode switch | Default (story switch off) |
 | Multiplayer | Not allowed (locks while in a room) | Yes |
-| Odds | Risk climbs at 40% speed; **half of all fatal presses are forgiven** | Normal |
-| Checkpoints | Entering an act halves the hidden risk; acts become restart points in the Story panel; the game-over card defaults to "one more from checkpoint" (space too) | None |
+| Odds | Risk climbs at 30% speed and never passes 1.2%; **half of all fatal presses are forgiven** | Normal |
+| Checkpoints | Entering an act knocks the hidden risk back to ~0.1%; acts become restart points in the Story panel; the game-over card defaults to "one more from checkpoint" (space too) | None |
 | Content | Every act, in order | Acts I–II, then loops event horizon → the other side, wilder each lap |
 | Saves | Own best, tiers, drift, history, furthest act | Own best, tiers, drift, history |
 

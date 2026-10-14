@@ -780,7 +780,7 @@
     runTier = t;
     const name = TIERS[t - 1].name + (runCycle ? ` ×${runCycle + 1}` : '');
     if (story && ACT_STARTS.includes(t)) {
-      risk *= 0.5; setTimeout(() => toast('checkpoint', 'good'), 900);
+      risk = Math.min(risk * 0.5, 0.001); setTimeout(() => toast('checkpoint', 'good'), 900);   // a checkpoint nearly resets the odds
       const act = ACT_STARTS.indexOf(t) + 1, key = 'onemore.actAt.' + act;
       if (!debugRun && !store.get(key)) store.set(key, count);
       if (!debugRun && act > (parseInt(store.get('onemore.act') || '0', 10) || 0)) store.set('onemore.act', act);
@@ -1086,9 +1086,9 @@
     publish('press');
 
     // the climb eases off the longer you last, so the deep milestones are rare but reachable
-    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.4 : 1);
+    const ease = Math.max(0.3, 1 / (1 + count / 30)) * (story ? 0.3 : 1);
     risk += Math.random() < BIG_JUMP_CHANCE * Math.max(0.4, ease) ? BIG_JUMP * ease : tinyJump() * ease;
-    risk = Math.min(MAX_RISK, Math.max(MIN_RISK, risk));
+    risk = Math.min(story ? 0.012 : MAX_RISK, Math.max(MIN_RISK, risk));   // story never climbs past 1.2%
 
     const fatal = Math.random() < risk && !(story && Math.random() < 0.5);   // story: half of all fatal rolls are forgiven
     if (!immortal && fatal) {
